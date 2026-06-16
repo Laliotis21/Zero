@@ -2,22 +2,25 @@ import { Platform, TextStyle, ViewStyle } from 'react-native';
 
 /**
  * ZERØ design system — single source of truth.
- * 2026 OLED dark / Bento / glassmorphism / neon micro-accents.
+ * 2026 fintech dark: monochrome slate surfaces + single blue accent.
+ * Restrained, high-contrast, professional. No neon.
  */
 
 export const colors = {
-  bg: '#0D0E15',
-  bgElevated: '#12131C',
-  card: '#1A1C28',
-  cardAlt: '#1E2030',
-  border: '#222538',
-  text: '#FFFFFF',
-  textMuted: '#8E92A7',
-  neonGreen: '#00E676',
-  cyan: '#00E5FF',
-  danger: '#FF5470',
-  amber: '#FFB020',
-  glassFill: 'rgba(255,255,255,0.04)',
+  bg: '#0B0C10',
+  bgElevated: '#111319',
+  card: '#15171E',
+  cardAlt: '#1B1E27',
+  border: '#262A35',
+  text: '#F5F6F8',
+  textMuted: '#9094A1',
+  /** Brand accent — primary actions, active states. */
+  primary: '#3D7BFF',
+  primaryDim: '#2B5FD9',
+  /** Semantic — calm, not neon. */
+  positive: '#2FB37A',
+  negative: '#E5564E',
+  warning: '#D9A441',
 } as const;
 
 export const spacing = {
@@ -38,7 +41,7 @@ export const radius = {
 } as const;
 
 export const font = {
-  hero: 56,
+  hero: 48,
   big: 32,
   title: 22,
   subtitle: 17,
@@ -56,10 +59,11 @@ export const weight = {
 } as const satisfies Record<string, TextStyle['fontWeight']>;
 
 /**
- * Neon glow helper — cross-platform shadow + Android elevation.
- * Use on CTAs, active tabs, hero numbers.
+ * Subtle accent shadow — cross-platform shadow + Android elevation.
+ * Use sparingly on primary CTAs and active states. Kept restrained for a
+ * professional look (no neon bloom).
  */
-export function glow(color: string, intensity = 0.55, radiusPx = 16): ViewStyle {
+export function glow(color: string, intensity = 0.3, radiusPx = 16): ViewStyle {
   return Platform.select<ViewStyle>({
     ios: {
       shadowColor: color,

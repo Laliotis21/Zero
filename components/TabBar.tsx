@@ -38,7 +38,7 @@ function TabBarBase({ active, onChange }: TabBarProps) {
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
           >
-            <View style={[styles.iconWrap, isActive && styles.iconWrapActive, isActive && glow(colors.neonGreen, 0.5, 14)]}>
+            <View style={[styles.iconWrap, isActive && styles.iconWrapActive, isActive && glow(colors.primary, 0.4, 14)]}>
               <Ionicons
                 name={tab.icon}
                 size={22}
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: {
-    backgroundColor: colors.neonGreen,
+    backgroundColor: colors.primary,
   },
   label: {
     color: colors.textMuted,

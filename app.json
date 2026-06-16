@@ -5,10 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0D0E15",
+    "backgroundColor": "#0B0C10",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0D0E15"
+      "backgroundColor": "#0B0C10"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D0E15"
+        "backgroundColor": "#0B0C10"
       },
       "edgeToEdgeEnabled": true
     },

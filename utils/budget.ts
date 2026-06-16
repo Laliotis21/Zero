@@ -1,16 +1,16 @@
 import { colors } from '../theme';
-import { BudgetBucket } from '../types';
+import { BudgetBucket, IconName } from '../types';
 
 /** Sub-allocation weights inside each bucket (sum = 1 per bucket). */
 interface ItemSpec {
-  emoji: string;
+  icon: IconName;
   label: string;
   weight: number;
 }
 
 interface BucketSpec {
   key: BudgetBucket['key'];
-  emoji: string;
+  icon: IconName;
   title: string;
   pct: number;
   accent: string;
@@ -21,37 +21,37 @@ interface BucketSpec {
 const BUCKET_SPECS: readonly BucketSpec[] = [
   {
     key: 'needs',
-    emoji: '🏠',
+    icon: 'home-outline',
     title: 'ΑΝΑΓΚΕΣ',
     pct: 50,
-    accent: colors.cyan,
+    accent: colors.primary,
     items: [
-      { emoji: '🔑', label: 'Max Ενοίκιο', weight: 0.6 },
-      { emoji: '⚡', label: 'Ενέργεια & Λογαριασμοί', weight: 0.24 },
-      { emoji: '🛒', label: 'Σούπερ μάρκετ', weight: 0.16 },
+      { icon: 'key-outline', label: 'Max Ενοίκιο', weight: 0.6 },
+      { icon: 'flash-outline', label: 'Ενέργεια & Λογαριασμοί', weight: 0.24 },
+      { icon: 'cart-outline', label: 'Σούπερ μάρκετ', weight: 0.16 },
     ],
   },
   {
     key: 'wants',
-    emoji: '🥂',
+    icon: 'sparkles-outline',
     title: 'ΕΠΙΘΥΜΙΕΣ',
     pct: 30,
-    accent: colors.amber,
+    accent: colors.warning,
     items: [
-      { emoji: '🍸', label: 'Lifestyle', weight: 0.5 },
-      { emoji: '☕', label: 'Cafés & Φαγητό', weight: 0.33 },
-      { emoji: '📺', label: 'Συνδρομές', weight: 0.17 },
+      { icon: 'wine-outline', label: 'Lifestyle', weight: 0.5 },
+      { icon: 'cafe-outline', label: 'Cafés & Φαγητό', weight: 0.33 },
+      { icon: 'tv-outline', label: 'Συνδρομές', weight: 0.17 },
     ],
   },
   {
     key: 'savings',
-    emoji: '💰',
+    icon: 'shield-checkmark-outline',
     title: 'ΑΠΟΤΑΜΙΕΥΣΗ',
     pct: 20,
-    accent: colors.neonGreen,
+    accent: colors.positive,
     items: [
-      { emoji: '🪙', label: 'Crypto Index', weight: 0.5 },
-      { emoji: '🛡️', label: 'Emergency Fund', weight: 0.5 },
+      { icon: 'trending-up-outline', label: 'Index / Επενδύσεις', weight: 0.5 },
+      { icon: 'umbrella-outline', label: 'Emergency Fund', weight: 0.5 },
     ],
   },
 ];
@@ -63,13 +63,13 @@ export function buildBudget(net: number): BudgetBucket[] {
     const amount = safe * (spec.pct / 100);
     return {
       key: spec.key,
-      emoji: spec.emoji,
+      icon: spec.icon,
       title: spec.title,
       pct: spec.pct,
       accent: spec.accent,
       amount,
       items: spec.items.map((it) => ({
-        emoji: it.emoji,
+        icon: it.icon,
         label: it.label,
         amount: amount * it.weight,
       })),

@@ -7,8 +7,8 @@ interface PulseDotProps {
   size?: number;
 }
 
-/** Breathing neon dot — single Animated.loop, native-driven. */
-function PulseDotBase({ color = colors.neonGreen, size = 9 }: PulseDotProps) {
+/** Breathing status dot — single Animated.loop, native-driven. */
+function PulseDotBase({ color = colors.positive, size = 9 }: PulseDotProps) {
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

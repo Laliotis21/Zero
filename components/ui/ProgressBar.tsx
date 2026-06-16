@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, glow, radius } from '../../theme';
+import { colors, radius } from '../../theme';
 
 interface ProgressBarProps {
   /** Ratio of the "good" (net) portion, 0..1. */
@@ -10,21 +10,20 @@ interface ProgressBarProps {
   height?: number;
 }
 
-/** Ultra-thin neon-glow split bar — net (good) vs deductions (bad). */
+/** Ultra-thin split bar — net (good) vs deductions (bad). */
 function ProgressBarBase({
   ratio,
-  goodColor = colors.neonGreen,
-  badColor = colors.danger,
+  goodColor = colors.positive,
+  badColor = colors.negative,
   height = 8,
 }: ProgressBarProps) {
   const pct = useMemo(() => Math.max(0, Math.min(1, ratio)) * 100, [ratio]);
 
   return (
-    <View style={[styles.track, { height, borderRadius: height / 2, backgroundColor: badColor }, glow(badColor, 0.25, 10)]}>
+    <View style={[styles.track, { height, borderRadius: height / 2, backgroundColor: badColor }]}>
       <View
         style={[
           styles.fill,
-          glow(goodColor, 0.6, 12),
           { width: `${pct}%`, backgroundColor: goodColor, borderRadius: height / 2 },
         ]}
       />

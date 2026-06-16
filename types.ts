@@ -13,15 +13,19 @@ export interface CalcResult {
   tax: number;
 }
 
+import type { Ionicons } from '@expo/vector-icons';
+
+export type IconName = keyof typeof Ionicons.glyphMap;
+
 export interface BudgetItem {
-  emoji: string;
+  icon: IconName;
   label: string;
   amount: number;
 }
 
 export interface BudgetBucket {
   key: 'needs' | 'wants' | 'savings';
-  emoji: string;
+  icon: IconName;
   title: string;
   pct: number;
   amount: number;

@@ -1,11 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, font, glow, radius, spacing, weight } from '../../theme';
-import { Mode } from '../../types';
+import { colors, font, radius, spacing, weight } from '../../theme';
+import { IconName, Mode } from '../../types';
 
 interface Segment {
   value: Mode;
   label: string;
+  icon: IconName;
 }
 
 interface SegmentControlProps {
@@ -14,8 +16,8 @@ interface SegmentControlProps {
 }
 
 const SEGMENTS: readonly Segment[] = [
-  { value: 'employee', label: '💼 Μισθωτός' },
-  { value: 'freelancer', label: '🚀 Μπλοκάκι' },
+  { value: 'employee', label: 'Μισθωτός', icon: 'briefcase-outline' },
+  { value: 'freelancer', label: 'Μπλοκάκι', icon: 'document-text-outline' },
 ];
 
 function SegmentControlBase({ value, onChange }: SegmentControlProps) {
@@ -29,10 +31,15 @@ function SegmentControlBase({ value, onChange }: SegmentControlProps) {
           <Pressable
             key={seg.value}
             onPress={handle(seg.value)}
-            style={[styles.pill, active && styles.pillActive, active && glow(colors.neonGreen, 0.35, 14)]}
+            style={[styles.pill, active && styles.pillActive]}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >
+            <Ionicons
+              name={seg.icon}
+              size={18}
+              color={active ? colors.bg : colors.textMuted}
+            />
             <Text style={[styles.label, active && styles.labelActive]}>{seg.label}</Text>
           </Pressable>
         );
@@ -54,11 +61,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 46,
     borderRadius: radius.full,
+    flexDirection: 'row',
+    gap: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pillActive: {
-    backgroundColor: colors.neonGreen,
+    backgroundColor: colors.primary,
   },
   label: {
     color: colors.textMuted,

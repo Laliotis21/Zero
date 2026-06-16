@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
+import { IconLabel } from '../components/ui/IconLabel';
 import { PulseDot } from '../components/ui/PulseDot';
 import { SegmentControl } from '../components/ui/SegmentControl';
 import { colors, font, radius, spacing, weight } from '../theme';
@@ -67,12 +68,10 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>
-          ZERØ <Text style={styles.logoBolt}>⚡</Text>
-        </Text>
+        <Text style={styles.logo}>ZERØ</Text>
         <View style={styles.aiStatus}>
-          <Text style={styles.aiText}>🤖 AI Online</Text>
           <PulseDot />
+          <Text style={styles.aiText}>AI Online</Text>
         </View>
       </View>
 
@@ -91,7 +90,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
             placeholderTextColor={colors.border}
             keyboardType="decimal-pad"
             style={styles.input}
-            selectionColor={colors.neonGreen}
+            selectionColor={colors.primary}
             maxLength={9}
           />
           <Text style={styles.euro}>€</Text>
@@ -101,7 +100,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
       {/* Bento 2x2 grid */}
       <View style={styles.grid}>
         <Card style={styles.cell} compact>
-          <Text style={styles.cellTitle}>👶 Παιδιά</Text>
+          <IconLabel name="people-outline" label="Παιδιά" />
           <View style={styles.chips}>
             {CHILD_OPTIONS.map((c) => {
               const active = c === children;
@@ -121,7 +120,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
 
         {isFreelancer ? (
           <Card style={styles.cell} compact>
-            <Text style={styles.cellTitle}>🏷️ Κλάση ΕΦΚΑ</Text>
+            <IconLabel name="pricetag-outline" label="Κλάση ΕΦΚΑ" />
             <View style={styles.stepper}>
               <TouchableOpacity onPress={decClass} activeOpacity={0.8} style={styles.stepBtn}>
                 <Text style={styles.stepSign}>−</Text>
@@ -135,7 +134,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
           </Card>
         ) : (
           <Card style={styles.cell} compact>
-            <Text style={styles.cellTitle}>📈 Τριετίες</Text>
+            <IconLabel name="trending-up-outline" label="Τριετίες" />
             <View style={styles.stepper}>
               <TouchableOpacity onPress={decYears} activeOpacity={0.8} style={styles.stepBtn}>
                 <Text style={styles.stepSign}>−</Text>
@@ -149,19 +148,19 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
         )}
 
         <Card style={styles.cell} compact>
-          <Text style={styles.cellTitle}>🗓️ Έτος</Text>
+          <IconLabel name="calendar-outline" label="Έτος" />
           <Text style={styles.cellValue}>2026</Text>
           <Text style={styles.cellHint}>Φορ. κλίμακα</Text>
         </Card>
 
         <Card style={styles.cell} compact>
-          <Text style={styles.cellTitle}>📍 Περιοχή</Text>
-          <Text style={styles.cellValue}>GR 🇬🇷</Text>
+          <IconLabel name="location-outline" label="Περιοχή" />
+          <Text style={styles.cellValue}>Ελλάδα</Text>
           <Text style={styles.cellHint}>Πανελλαδικά</Text>
         </Card>
       </View>
 
-      <GlowButton label="⚙️  ΥΠΟΛΟΓΙΣΜΟΣ" onPress={handleCalc} style={styles.cta} />
+      <GlowButton label="ΥΠΟΛΟΓΙΣΜΟΣ" icon="calculator-outline" onPress={handleCalc} style={styles.cta} />
     </ScrollView>
   );
 }
@@ -185,7 +184,6 @@ const styles = StyleSheet.create({
     fontWeight: weight.black,
     letterSpacing: 1,
   },
-  logoBolt: { fontSize: font.title },
   aiStatus: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,7 +208,7 @@ const styles = StyleSheet.create({
     padding: 0,
     letterSpacing: -1,
   },
-  euro: { color: colors.neonGreen, fontSize: font.big, fontWeight: weight.bold },
+  euro: { color: colors.primary, fontSize: font.big, fontWeight: weight.bold },
 
   grid: {
     flexDirection: 'row',
@@ -222,8 +220,7 @@ const styles = StyleSheet.create({
     flexBasis: '47%',
     gap: spacing.md,
   },
-  cellTitle: { color: colors.text, fontSize: font.body, fontWeight: weight.semibold },
-  cellValue: { color: colors.cyan, fontSize: font.title, fontWeight: weight.bold },
+  cellValue: { color: colors.primary, fontSize: font.title, fontWeight: weight.bold },
   cellHint: { color: colors.textMuted, fontSize: font.micro },
 
   chips: { flexDirection: 'row', gap: spacing.sm },
@@ -237,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipActive: { backgroundColor: colors.neonGreen, borderColor: colors.neonGreen },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.semibold },
   chipTextActive: { color: colors.bg, fontWeight: weight.bold },
 
@@ -252,9 +249,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepSign: { color: colors.neonGreen, fontSize: font.title, fontWeight: weight.bold },
+  stepSign: { color: colors.primary, fontSize: font.title, fontWeight: weight.bold },
   stepValue: { color: colors.text, fontSize: font.big, fontWeight: weight.black },
-  classFee: { color: colors.cyan, fontSize: font.small, fontWeight: weight.semibold, textAlign: 'center' },
+  classFee: { color: colors.primary, fontSize: font.small, fontWeight: weight.semibold, textAlign: 'center' },
 
   cta: { marginTop: spacing.sm },
 });

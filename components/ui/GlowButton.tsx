@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useRef } from 'react';
 import {
@@ -9,21 +10,25 @@ import {
   ViewStyle,
 } from 'react-native';
 import { colors, font, glow, radius, spacing, weight } from '../../theme';
+import { IconName } from '../../types';
 
 interface GlowButtonProps {
   label: string;
   onPress?: () => void;
   color?: string;
-  /** Outline (ghost) instead of filled neon. */
+  /** Optional leading icon (Ionicons). */
+  icon?: IconName;
+  /** Outline (ghost) instead of filled accent. */
   variant?: 'solid' | 'outline';
   style?: ViewStyle;
 }
 
-/** Full-width neon CTA with press-scale + haptic feedback. */
+/** Full-width accent CTA with press-scale + haptic feedback. */
 function GlowButtonBase({
   label,
   onPress,
-  color = colors.neonGreen,
+  color = colors.primary,
+  icon,
   variant = 'solid',
   style,
 }: GlowButtonProps) {
@@ -49,10 +54,11 @@ function GlowButtonBase({
   }, [onPress]);
 
   const containerStyle: ViewStyle = isSolid
-    ? { backgroundColor: color, ...glow(color, 0.6, 22) }
+    ? { backgroundColor: color, ...glow(color, 0.4, 18) }
     : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color };
 
-  const textStyle: TextStyle = { color: isSolid ? colors.bg : color };
+  const tint = isSolid ? colors.bg : color;
+  const textStyle: TextStyle = { color: tint };
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
@@ -64,6 +70,7 @@ function GlowButtonBase({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
+        {icon ? <Ionicons name={icon} size={20} color={tint} style={styles.icon} /> : null}
         <Text style={[styles.label, textStyle]}>{label}</Text>
       </Pressable>
     </Animated.View>
@@ -72,16 +79,18 @@ function GlowButtonBase({
 
 const styles = StyleSheet.create({
   btn: {
-    height: 58,
+    height: 56,
     borderRadius: radius.md,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
+  icon: { marginRight: spacing.sm },
   label: {
     fontSize: font.subtitle,
     fontWeight: weight.bold,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 });
 

@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
+import { IconLabel } from '../components/ui/IconLabel';
 import { colors, font, radius, spacing, weight } from '../theme';
 import { BudgetBucket } from '../types';
 import { buildBudget } from '../utils/budget';
@@ -15,9 +17,13 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
   return (
     <Card style={[styles.bucket, { borderColor: bucket.accent }]}>
       <View style={styles.bucketHead}>
-        <Text style={styles.bucketTitle}>
-          {bucket.emoji}  {bucket.title}
-        </Text>
+        <IconLabel
+          name={bucket.icon}
+          label={bucket.title}
+          iconColor={bucket.accent}
+          size={20}
+          textStyle={styles.bucketTitle}
+        />
         <View style={[styles.pctPill, { backgroundColor: bucket.accent }]}>
           <Text style={styles.pctText}>{bucket.pct}%</Text>
         </View>
@@ -33,9 +39,14 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
       <View style={styles.items}>
         {bucket.items.map((item) => (
           <View key={item.label} style={styles.itemRow}>
-            <Text style={styles.itemLabel}>
-              {item.emoji}  {item.label}
-            </Text>
+            <IconLabel
+              name={item.icon}
+              label={item.label}
+              color={colors.textMuted}
+              iconColor={colors.textMuted}
+              size={16}
+              textStyle={styles.itemLabel}
+            />
             <Text style={styles.itemAmount}>{formatEuro(item.amount)}</Text>
           </View>
         ))}
@@ -52,7 +63,7 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
   if (net <= 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyEmoji}>🔮</Text>
+        <Ionicons name="pie-chart-outline" size={44} color={colors.textMuted} />
         <Text style={styles.emptyTitle}>Δεν υπάρχει εισόδημα</Text>
         <Text style={styles.emptyBody}>Υπολόγισε τον μισθό σου για να δεις το budget split.</Text>
       </View>
@@ -65,10 +76,10 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.screenTitle}>🔮 Smart Budget Splitter</Text>
+      <Text style={styles.screenTitle}>Smart Budget Splitter</Text>
       <Text style={styles.intro}>
         Διαχωρισμός <Text style={styles.introStrong}>{formatEuro(net)}</Text> με αλγόριθμο 50/30/20{'  '}
-        <Text style={styles.tag}>📈 2026 inflation-adjusted</Text>
+        <Text style={styles.tag}>2026 inflation-adjusted</Text>
       </Text>
 
       {buckets.map((bucket) => (
@@ -76,8 +87,8 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
       ))}
 
       <View style={styles.actions}>
-        <GlowButton label="💾 Αποθήκευση" variant="outline" onPress={onSave} style={styles.action} />
-        <GlowButton label="📄 Εξαγωγή PDF" onPress={onExport} style={styles.action} />
+        <GlowButton label="Αποθήκευση" icon="bookmark-outline" variant="outline" onPress={onSave} style={styles.action} />
+        <GlowButton label="Εξαγωγή PDF" icon="download-outline" onPress={onExport} style={styles.action} />
       </View>
     </ScrollView>
   );
@@ -94,16 +105,15 @@ const styles = StyleSheet.create({
   },
   intro: { color: colors.textMuted, fontSize: font.small, lineHeight: 21 },
   introStrong: { color: colors.text, fontWeight: weight.bold },
-  tag: { color: colors.neonGreen, fontWeight: weight.semibold },
+  tag: { color: colors.positive, fontWeight: weight.semibold },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold },
+  emptyTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },
   emptyBody: { color: colors.textMuted, fontSize: font.body, textAlign: 'center', lineHeight: 21 },
 
   bucket: { gap: spacing.md },
   bucketHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bucketTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, letterSpacing: 0.5 },
+  bucketTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, letterSpacing: 0.5, flexShrink: 0 },
   pctPill: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 3 },
   pctText: { color: colors.bg, fontSize: font.small, fontWeight: weight.black },
   bucketAmount: { fontSize: font.big, fontWeight: weight.black, letterSpacing: -1 },
@@ -118,7 +128,7 @@ const styles = StyleSheet.create({
 
   items: { gap: spacing.sm, marginTop: spacing.xs },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemLabel: { color: colors.textMuted, fontSize: font.body, flex: 1, marginRight: spacing.md },
+  itemLabel: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.regular },
   itemAmount: { color: colors.text, fontSize: font.body, fontWeight: weight.semibold },
 
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
