@@ -20,6 +20,7 @@ const TABS: readonly TabDef[] = [
   { key: 'home', label: 'Είσοδος', icon: 'calculator-outline' },
   { key: 'results', label: 'Αποτέλεσμα', icon: 'pie-chart-outline' },
   { key: 'budget', label: 'Budget', icon: 'sparkles-outline' },
+  { key: 'profile', label: 'Προφίλ', icon: 'person-outline' },
 ];
 
 function TabBarBase({ active, onChange }: TabBarProps) {

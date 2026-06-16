@@ -1,6 +1,6 @@
 export type Mode = 'employee' | 'freelancer';
 
-export type ScreenKey = 'home' | 'results' | 'budget';
+export type ScreenKey = 'home' | 'results' | 'budget' | 'profile';
 
 export interface CalcResult {
   /** Net monthly income in euros. */

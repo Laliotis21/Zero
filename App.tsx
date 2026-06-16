@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './components/TabBar';
 import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { useTheme } from './theme';
 import { CalcResult, ScreenKey } from './types';
@@ -28,6 +29,8 @@ export default function App() {
         return <ResultsScreen result={result} onUpgrade={goBudget} />;
       case 'budget':
         return <BudgetScreen net={result?.net ?? 0} />;
+      case 'profile':
+        return <ProfileScreen net={result?.net ?? 0} onUpgrade={goBudget} />;
       default:
         return null;
     }
