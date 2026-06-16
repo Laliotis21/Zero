@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "ZERØ",
+    "slug": "zero",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0D0E15",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0E15"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0E15"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
