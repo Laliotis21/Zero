@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useT, type StringKey } from '../../i18n/strings';
 import { font, Palette, radius, spacing, useTheme, weight } from '../../theme';
 import { IconName, Mode } from '../../types';
 
 interface Segment {
   value: Mode;
-  label: string;
+  labelKey: StringKey;
   icon: IconName;
 }
 
@@ -16,12 +17,13 @@ interface SegmentControlProps {
 }
 
 const SEGMENTS: readonly Segment[] = [
-  { value: 'employee', label: 'Μισθωτός', icon: 'briefcase-outline' },
-  { value: 'freelancer', label: 'Μπλοκάκι', icon: 'document-text-outline' },
+  { value: 'employee', labelKey: 'mode.employee', icon: 'briefcase-outline' },
+  { value: 'freelancer', labelKey: 'mode.freelancer', icon: 'document-text-outline' },
 ];
 
 function SegmentControlBase({ value, onChange }: SegmentControlProps) {
   const c = useTheme();
+  const t = useT();
   const styles = useMemo(() => makeStyles(c), [c]);
   const handle = useCallback((v: Mode) => () => onChange(v), [onChange]);
 
@@ -42,7 +44,7 @@ function SegmentControlBase({ value, onChange }: SegmentControlProps) {
               size={18}
               color={active ? c.onAccent : c.textMuted}
             />
-            <Text style={[styles.label, active && styles.labelActive]}>{seg.label}</Text>
+            <Text style={[styles.label, active && styles.labelActive]}>{t(seg.labelKey)}</Text>
           </Pressable>
         );
       })}

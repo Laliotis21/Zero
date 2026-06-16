@@ -4,10 +4,12 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
+import { useT } from '../i18n/strings';
+import { useSettings } from '../settings/SettingsContext';
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { BudgetBucket } from '../types';
 import { buildBudget } from '../utils/budget';
-import { formatEuro } from '../utils/format';
+import { useMoney } from '../utils/money';
 
 interface BudgetScreenProps {
   net: number;
@@ -15,13 +17,15 @@ interface BudgetScreenProps {
 
 const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }) {
   const t = useTheme();
+  const tr = useT();
+  const money = useMoney();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Card style={[styles.bucket, { borderColor: bucket.accent }]}>
       <View style={styles.bucketHead}>
         <IconLabel
           name={bucket.icon}
-          label={bucket.title}
+          label={tr(bucket.titleKey)}
           iconColor={bucket.accent}
           size={20}
           textStyle={styles.bucketTitle}
@@ -31,7 +35,7 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
         </View>
       </View>
 
-      <Text style={[styles.bucketAmount, { color: bucket.accent }]}>{formatEuro(bucket.amount)}</Text>
+      <Text style={[styles.bucketAmount, { color: bucket.accent }]}>{money.format(bucket.amount)}</Text>
 
       {/* accent sliver */}
       <View style={styles.sliverTrack}>
@@ -40,16 +44,16 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
 
       <View style={styles.items}>
         {bucket.items.map((item) => (
-          <View key={item.label} style={styles.itemRow}>
+          <View key={item.labelKey} style={styles.itemRow}>
             <IconLabel
               name={item.icon}
-              label={item.label}
+              label={tr(item.labelKey)}
               color={t.textMuted}
               iconColor={t.textMuted}
               size={16}
               textStyle={styles.itemLabel}
             />
-            <Text style={styles.itemAmount}>{formatEuro(item.amount)}</Text>
+            <Text style={styles.itemAmount}>{money.format(item.amount)}</Text>
           </View>
         ))}
       </View>
@@ -59,17 +63,23 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
 
 function BudgetScreenBase({ net }: BudgetScreenProps) {
   const t = useTheme();
+  const tr = useT();
+  const money = useMoney();
+  const { settings } = useSettings();
   const styles = useMemo(() => makeStyles(t), [t]);
   const buckets = useMemo(() => buildBudget(net), [net]);
   const onSave = useCallback(() => undefined, []);
   const onExport = useCallback(() => undefined, []);
 
+  // Split the template around {amount} so the amount can be styled bold inline.
+  const [introBefore = '', introAfter = ''] = tr('budget.intro').split('{amount}');
+
   if (net <= 0) {
     return (
       <View style={styles.empty}>
         <Ionicons name="pie-chart-outline" size={44} color={t.textMuted} />
-        <Text style={styles.emptyTitle}>Δεν υπάρχει εισόδημα</Text>
-        <Text style={styles.emptyBody}>Υπολόγισε τον μισθό σου για να δεις το budget split.</Text>
+        <Text style={styles.emptyTitle}>{tr('budget.empty.title')}</Text>
+        <Text style={styles.emptyBody}>{tr('budget.empty.body')}</Text>
       </View>
     );
   }
@@ -80,10 +90,13 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.screenTitle}>Smart Budget Splitter</Text>
+      <Text style={styles.screenTitle}>{tr('budget.title')}</Text>
       <Text style={styles.intro}>
-        Διαχωρισμός <Text style={styles.introStrong}>{formatEuro(net)}</Text> με αλγόριθμο 50/30/20{'  '}
-        <Text style={styles.tag}>2026 inflation-adjusted</Text>
+        {introBefore}
+        <Text style={styles.introStrong}>{money.format(net)}</Text>
+        {introAfter}
+        {'  '}
+        <Text style={styles.tag}>{tr('budget.tag', { year: settings.taxYear })}</Text>
       </Text>
 
       {buckets.map((bucket) => (
@@ -91,8 +104,8 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
       ))}
 
       <View style={styles.actions}>
-        <GlowButton label="Αποθήκευση" icon="bookmark-outline" variant="outline" onPress={onSave} style={styles.action} />
-        <GlowButton label="Εξαγωγή PDF" icon="download-outline" onPress={onExport} style={styles.action} />
+        <GlowButton label={tr('budget.save')} icon="bookmark-outline" variant="outline" onPress={onSave} style={styles.action} />
+        <GlowButton label={tr('budget.export')} icon="download-outline" onPress={onExport} style={styles.action} />
       </View>
     </ScrollView>
   );

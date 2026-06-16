@@ -5,9 +5,12 @@ import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { useT, type StringKey } from '../i18n/strings';
+import { useSettings } from '../settings/SettingsContext';
 import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, IconName } from '../types';
-import { formatEuro, splitEuro } from '../utils/format';
+import { splitEuro } from '../utils/format';
+import { useMoney } from '../utils/money';
 
 interface ResultsScreenProps {
   result: CalcResult | null;
@@ -16,30 +19,35 @@ interface ResultsScreenProps {
 
 interface DeductionRowProps {
   icon: IconName;
-  label: string;
+  labelKey: StringKey;
   amount: number;
 }
 
-const DeductionRow = memo(function DeductionRow({ icon, label, amount }: DeductionRowProps) {
+const DeductionRow = memo(function DeductionRow({ icon, labelKey, amount }: DeductionRowProps) {
   const t = useTheme();
+  const tr = useT();
+  const money = useMoney();
   const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.dedRow}>
       <IconLabel
         name={icon}
-        label={label}
+        label={tr(labelKey)}
         color={t.textMuted}
         iconColor={t.textMuted}
         size={17}
         textStyle={styles.dedLabel}
       />
-      <Text style={styles.dedAmount}>{formatEuro(amount)}</Text>
+      <Text style={styles.dedAmount}>{money.format(amount)}</Text>
     </View>
   );
 });
 
 function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
   const t = useTheme();
+  const tr = useT();
+  const money = useMoney();
+  const { settings } = useSettings();
   const styles = useMemo(() => makeStyles(t), [t]);
   const handleUpgrade = useCallback(() => onUpgrade(), [onUpgrade]);
 
@@ -60,10 +68,8 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
     return (
       <View style={styles.empty}>
         <Ionicons name="calculator-outline" size={44} color={t.textMuted} />
-        <Text style={styles.emptyTitle}>Κανένας υπολογισμός ακόμη</Text>
-        <Text style={styles.emptyBody}>
-          Συμπλήρωσε μισθό στην αρχική και πάτα ΥΠΟΛΟΓΙΣΜΟΣ.
-        </Text>
+        <Text style={styles.emptyTitle}>{tr('results.empty.title')}</Text>
+        <Text style={styles.emptyBody}>{tr('results.empty.body')}</Text>
       </View>
     );
   }
@@ -74,13 +80,13 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.screenTitle}>Ανάλυση 2026</Text>
+      <Text style={styles.screenTitle}>{tr('results.title', { year: settings.taxYear })}</Text>
 
       {/* Hero net income */}
       <Card style={styles.hero}>
         <IconLabel
           name="wallet-outline"
-          label="Καθαρά στο χέρι"
+          label={tr('results.net')}
           color={t.textMuted}
           iconColor={t.textMuted}
           size={16}
@@ -88,36 +94,36 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         />
         <View style={styles.heroRow}>
           <Text style={styles.heroWhole}>{view.hero.whole}</Text>
-          <Text style={styles.heroCents}>,{view.hero.cents} €</Text>
+          <Text style={styles.heroCents}>,{view.hero.cents} {money.symbol}</Text>
         </View>
-        <Text style={styles.heroSub}>/ μήνα</Text>
+        <Text style={styles.heroSub}>{tr('results.perMonth')}</Text>
       </Card>
 
       {/* Deductions */}
       <Card style={styles.gap}>
-        <IconLabel name="receipt-outline" label="Κρατήσεις" size={20} textStyle={styles.cardTitle} />
-        <DeductionRow icon="shield-outline" label="Ασφαλιστικές Εισφορές (ΕΦΚΑ)" amount={view.efka} />
+        <IconLabel name="receipt-outline" label={tr('results.deductions')} size={20} textStyle={styles.cardTitle} />
+        <DeductionRow icon="shield-outline" labelKey="results.efka" amount={view.efka} />
         <View style={styles.divider} />
-        <DeductionRow icon="business-outline" label="Φόρος Εισοδήματος" amount={view.tax} />
+        <DeductionRow icon="business-outline" labelKey="results.tax" amount={view.tax} />
         <View style={styles.divider} />
         <View style={styles.dedRow}>
-          <Text style={styles.totalLabel}>Σύνολο κρατήσεων</Text>
-          <Text style={styles.totalAmount}>{formatEuro(view.totalDed)}</Text>
+          <Text style={styles.totalLabel}>{tr('results.totalDeductions')}</Text>
+          <Text style={styles.totalAmount}>{money.format(view.totalDed)}</Text>
         </View>
       </Card>
 
       {/* Ratio bar */}
       <Card style={styles.gap}>
-        <IconLabel name="stats-chart-outline" label="Καθαρά vs Κρατήσεις" size={20} textStyle={styles.cardTitle} />
+        <IconLabel name="stats-chart-outline" label={tr('results.netVsDed')} size={20} textStyle={styles.cardTitle} />
         <ProgressBar ratio={view.ratio} />
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: t.positive }]} />
-            <Text style={styles.legendGood}>Καθαρά {Math.round(view.ratio * 100)}%</Text>
+            <Text style={styles.legendGood}>{tr('results.legendNet', { pct: Math.round(view.ratio * 100) })}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: t.negative }]} />
-            <Text style={styles.legendBad}>Κρατήσεις {Math.round((1 - view.ratio) * 100)}%</Text>
+            <Text style={styles.legendBad}>{tr('results.legendDed', { pct: Math.round((1 - view.ratio) * 100) })}</Text>
           </View>
         </View>
       </Card>
@@ -127,12 +133,10 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         <View style={styles.lockBadge}>
           <Ionicons name="lock-closed-outline" size={24} color={t.primary} />
         </View>
-        <Text style={styles.paywallTitle}>AI Reverse Pricing</Text>
-        <Text style={styles.paywallBody}>
-          Βρες πόσο πρέπει να χρεώνεις ως freelancer για τον στόχο σου. Powered by AI.
-        </Text>
-        <Text style={styles.price}>€2.99 · one-time</Text>
-        <GlowButton label="Upgrade" icon="arrow-up-circle-outline" onPress={handleUpgrade} style={styles.upgradeBtn} />
+        <Text style={styles.paywallTitle}>{tr('results.paywall.title')}</Text>
+        <Text style={styles.paywallBody}>{tr('results.paywall.body')}</Text>
+        <Text style={styles.price}>{tr('results.paywall.price')}</Text>
+        <GlowButton label={tr('results.paywall.cta')} icon="arrow-up-circle-outline" onPress={handleUpgrade} style={styles.upgradeBtn} />
       </Card>
     </ScrollView>
   );

@@ -14,19 +14,22 @@ export interface CalcResult {
 }
 
 import type { Ionicons } from '@expo/vector-icons';
+import type { StringKey } from './i18n/strings';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
 export interface BudgetItem {
   icon: IconName;
-  label: string;
+  /** i18n key for the item label. */
+  labelKey: StringKey;
   amount: number;
 }
 
 export interface BudgetBucket {
   key: 'needs' | 'wants' | 'savings';
   icon: IconName;
-  title: string;
+  /** i18n key for the bucket title. */
+  titleKey: StringKey;
   pct: number;
   amount: number;
   accent: string;

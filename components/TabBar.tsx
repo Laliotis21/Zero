@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT, type StringKey } from '../i18n/strings';
 import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { ScreenKey } from '../types';
 
 interface TabDef {
   key: ScreenKey;
-  label: string;
+  labelKey: StringKey;
   icon: keyof typeof Ionicons.glyphMap;
 }
 
@@ -17,14 +18,15 @@ interface TabBarProps {
 }
 
 const TABS: readonly TabDef[] = [
-  { key: 'home', label: 'Είσοδος', icon: 'calculator-outline' },
-  { key: 'results', label: 'Αποτέλεσμα', icon: 'pie-chart-outline' },
-  { key: 'budget', label: 'Budget', icon: 'sparkles-outline' },
-  { key: 'profile', label: 'Προφίλ', icon: 'person-outline' },
+  { key: 'home', labelKey: 'tab.home', icon: 'calculator-outline' },
+  { key: 'results', labelKey: 'tab.results', icon: 'pie-chart-outline' },
+  { key: 'budget', labelKey: 'tab.budget', icon: 'sparkles-outline' },
+  { key: 'profile', labelKey: 'tab.profile', icon: 'person-outline' },
 ];
 
 function TabBarBase({ active, onChange }: TabBarProps) {
   const c = useTheme();
+  const t = useT();
   const styles = useMemo(() => makeStyles(c), [c]);
   const insets = useSafeAreaInsets();
   const handle = useCallback((k: ScreenKey) => () => onChange(k), [onChange]);
@@ -48,7 +50,7 @@ function TabBarBase({ active, onChange }: TabBarProps) {
                 color={isActive ? c.onAccent : c.textMuted}
               />
             </View>
-            <Text style={[styles.label, isActive && styles.labelActive]}>{tab.label}</Text>
+            <Text style={[styles.label, isActive && styles.labelActive]}>{t(tab.labelKey)}</Text>
           </Pressable>
         );
       })}

@@ -11,17 +11,18 @@ import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { SegmentControl } from '../components/ui/SegmentControl';
+import { useT } from '../i18n/strings';
+import { useSettings } from '../settings/SettingsContext';
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, Mode } from '../types';
-import { EFKA_FREELANCER_CLASSES, calcEmployee, calcFreelancer } from '../utils/taxEngine';
-import { formatEuro } from '../utils/format';
+import { calcEmployee, calcFreelancer, efkaFreelancerClasses } from '../utils/taxEngine';
+import { useMoney } from '../utils/money';
 
 interface HomeScreenProps {
   onCalculate: (result: CalcResult) => void;
 }
 
 const CHILD_OPTIONS = ['0', '1', '2', '3+'] as const;
-const MAX_EFKA_CLASS = EFKA_FREELANCER_CLASSES.length;
 
 /** Parse a Greek/plain numeric string ("1.234,50" or "1234.5") to number. */
 function parseAmount(raw: string): number {
@@ -32,6 +33,10 @@ function parseAmount(raw: string): number {
 
 function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const t = useTheme();
+  const tr = useT();
+  const money = useMoney();
+  const { settings } = useSettings();
+  const taxYear = settings.taxYear;
   const styles = useMemo(() => makeStyles(t), [t]);
   const [mode, setMode] = useState<Mode>('employee');
   const [gross, setGross] = useState('');
@@ -39,26 +44,29 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const [years, setYears] = useState(0);
   const [efkaClass, setEfkaClass] = useState(1);
 
+  const classes = useMemo(() => efkaFreelancerClasses(taxYear), [taxYear]);
+  const maxEfkaClass = classes.length;
+
   const pickChild = useCallback((c: string) => () => setChildren(c), []);
   const decYears = useCallback(() => setYears((y) => Math.max(0, y - 1)), []);
   const incYears = useCallback(() => setYears((y) => Math.min(9, y + 1)), []);
   const decClass = useCallback(() => setEfkaClass((c) => Math.max(1, c - 1)), []);
-  const incClass = useCallback(() => setEfkaClass((c) => Math.min(MAX_EFKA_CLASS, c + 1)), []);
+  const incClass = useCallback(
+    () => setEfkaClass((c) => Math.min(maxEfkaClass, c + 1)),
+    [maxEfkaClass],
+  );
 
   const isFreelancer = mode === 'freelancer';
-  const classFee = useMemo(
-    () => EFKA_FREELANCER_CLASSES[efkaClass - 1] ?? 0,
-    [efkaClass],
-  );
+  const classFee = classes[efkaClass - 1] ?? 0;
 
   const handleCalc = useCallback(() => {
     const amount = parseAmount(gross);
     const childCount = children === '3+' ? 3 : Number.parseInt(children, 10) || 0;
     const result = isFreelancer
-      ? calcFreelancer(amount, efkaClass)
-      : calcEmployee(amount, childCount, years);
+      ? calcFreelancer(amount, efkaClass, taxYear)
+      : calcEmployee(amount, childCount, years, taxYear);
     onCalculate(result);
-  }, [gross, children, years, efkaClass, isFreelancer, onCalculate]);
+  }, [gross, children, years, efkaClass, isFreelancer, taxYear, onCalculate]);
 
   return (
     <ScrollView
@@ -77,7 +85,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
       {/* Gross salary / revenue input */}
       <View style={styles.inputBlock}>
         <Text style={styles.inputCaption}>
-          {isFreelancer ? 'Μηνιαίες Αμοιβές' : 'Βασικός Μικτός Μισθός'} (μηνιαίος)
+          {isFreelancer ? tr('home.caption.freelancer') : tr('home.caption.employee')}
         </Text>
         <View style={styles.inputRow}>
           <TextInput
@@ -90,14 +98,14 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
             selectionColor={t.primary}
             maxLength={9}
           />
-          <Text style={styles.euro}>€</Text>
+          <Text style={styles.euro}>{money.symbol}</Text>
         </View>
       </View>
 
       {/* Bento 2x2 grid */}
       <View style={styles.grid}>
         <Card style={styles.cell} compact>
-          <IconLabel name="people-outline" label="Παιδιά" />
+          <IconLabel name="people-outline" label={tr('home.children')} />
           <View style={styles.chips}>
             {CHILD_OPTIONS.map((c) => {
               const active = c === children;
@@ -117,7 +125,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
 
         {isFreelancer ? (
           <Card style={styles.cell} compact>
-            <IconLabel name="pricetag-outline" label="Κλάση ΕΦΚΑ" />
+            <IconLabel name="pricetag-outline" label={tr('home.efkaClass')} />
             <View style={styles.stepper}>
               <TouchableOpacity onPress={decClass} activeOpacity={0.8} style={styles.stepBtn}>
                 <Text style={styles.stepSign}>−</Text>
@@ -127,11 +135,14 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
                 <Text style={styles.stepSign}>+</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.classFee}>{formatEuro(classFee)}/μήνα</Text>
+            <Text style={styles.classFee}>
+              {money.format(classFee)}
+              {tr('home.perMonth')}
+            </Text>
           </Card>
         ) : (
           <Card style={styles.cell} compact>
-            <IconLabel name="trending-up-outline" label="Τριετίες" />
+            <IconLabel name="trending-up-outline" label={tr('home.triennia')} />
             <View style={styles.stepper}>
               <TouchableOpacity onPress={decYears} activeOpacity={0.8} style={styles.stepBtn}>
                 <Text style={styles.stepSign}>−</Text>
@@ -145,19 +156,19 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
         )}
 
         <Card style={styles.cell} compact>
-          <IconLabel name="calendar-outline" label="Έτος" />
-          <Text style={styles.cellValue}>2026</Text>
-          <Text style={styles.cellHint}>Φορ. κλίμακα</Text>
+          <IconLabel name="calendar-outline" label={tr('home.year')} />
+          <Text style={styles.cellValue}>{taxYear}</Text>
+          <Text style={styles.cellHint}>{tr('home.yearHint')}</Text>
         </Card>
 
         <Card style={styles.cell} compact>
-          <IconLabel name="location-outline" label="Περιοχή" />
-          <Text style={styles.cellValue}>Ελλάδα</Text>
-          <Text style={styles.cellHint}>Πανελλαδικά</Text>
+          <IconLabel name="location-outline" label={tr('home.region')} />
+          <Text style={styles.cellValue}>{tr('home.regionValue')}</Text>
+          <Text style={styles.cellHint}>{tr('home.regionHint')}</Text>
         </Card>
       </View>
 
-      <GlowButton label="ΥΠΟΛΟΓΙΣΜΟΣ" icon="calculator-outline" onPress={handleCalc} style={styles.cta} />
+      <GlowButton label={tr('home.calculate')} icon="calculator-outline" onPress={handleCalc} style={styles.cta} />
     </ScrollView>
   );
 }

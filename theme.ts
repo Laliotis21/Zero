@@ -1,4 +1,5 @@
 import { Platform, TextStyle, useColorScheme, ViewStyle } from 'react-native';
+import { useSettings } from './settings/SettingsContext';
 
 /**
  * ZERØ design system — single source of truth.
@@ -49,12 +50,15 @@ export const palettes: Record<'dark' | 'light', Palette> = {
 };
 
 /**
- * Active palette for the current OS color scheme. Re-renders on OS toggle
- * (useColorScheme subscribes to scheme changes).
+ * Active palette. Honors the user's appearance preference:
+ *   - 'system' → follow the OS color scheme (re-renders on OS toggle)
+ *   - 'light' / 'dark' → forced override
  */
 export function useTheme(): Palette {
   const scheme = useColorScheme();
-  return scheme === 'light' ? palettes.light : palettes.dark;
+  const { settings } = useSettings();
+  const mode = settings.themeMode === 'system' ? scheme : settings.themeMode;
+  return mode === 'light' ? palettes.light : palettes.dark;
 }
 
 /**

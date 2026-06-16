@@ -7,11 +7,15 @@ import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
-import { useTheme } from './theme';
+import { SettingsProvider } from './settings/SettingsContext';
+import { palettes, useTheme } from './theme';
 import { CalcResult, ScreenKey } from './types';
 
-export default function App() {
+function AppInner() {
   const c = useTheme();
+  // Drive the status bar from the resolved palette (honors forced light/dark),
+  // not the OS scheme — otherwise a forced override mismatches the bar.
+  const isLight = c.bg === palettes.light.bg;
   const [screen, setScreen] = useState<ScreenKey>('home');
   const [result, setResult] = useState<CalcResult | null>(null);
 
@@ -37,12 +41,20 @@ export default function App() {
   }, [screen, result, handleCalculate, goBudget]);
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'left', 'right']}>
+      <StatusBar style={isLight ? 'dark' : 'light'} />
+      <View style={{ flex: 1 }}>{current}</View>
+      <TabBar active={screen} onChange={setScreen} />
+    </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'left', 'right']}>
-        <StatusBar style="auto" />
-        <View style={{ flex: 1 }}>{current}</View>
-        <TabBar active={screen} onChange={setScreen} />
-      </SafeAreaView>
+      <SettingsProvider>
+        <AppInner />
+      </SettingsProvider>
     </SafeAreaProvider>
   );
 }
