@@ -237,6 +237,7 @@ function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
         selected={settings.taxYear}
         onSelect={(v) => update({ taxYear: v })}
         onClose={closeSheet}
+        note={tr('year.note')}
       />
       <OptionSheet<Currency>
         visible={sheet === 'currency'}

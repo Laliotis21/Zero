@@ -50,15 +50,20 @@ export const palettes: Record<'dark' | 'light', Palette> = {
 };
 
 /**
- * Active palette. Honors the user's appearance preference:
+ * Resolved color scheme ('light' | 'dark'), honoring the appearance preference:
  *   - 'system' → follow the OS color scheme (re-renders on OS toggle)
  *   - 'light' / 'dark' → forced override
  */
-export function useTheme(): Palette {
+export function useResolvedMode(): 'light' | 'dark' {
   const scheme = useColorScheme();
   const { settings } = useSettings();
   const mode = settings.themeMode === 'system' ? scheme : settings.themeMode;
-  return mode === 'light' ? palettes.light : palettes.dark;
+  return mode === 'light' ? 'light' : 'dark';
+}
+
+/** Active palette for the resolved color scheme. */
+export function useTheme(): Palette {
+  return palettes[useResolvedMode()];
 }
 
 /**

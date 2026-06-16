@@ -1,3 +1,5 @@
+import type { TaxYear } from './settings/SettingsContext';
+
 export type Mode = 'employee' | 'freelancer';
 
 export type ScreenKey = 'home' | 'results' | 'budget' | 'profile';
@@ -11,6 +13,8 @@ export interface CalcResult {
   efka: number;
   /** Income tax (Φόρος Εισοδήματος) in euros. */
   tax: number;
+  /** Tax year the figures were computed for (to detect stale results). */
+  year: TaxYear;
 }
 
 import type { Ionicons } from '@expo/vector-icons';

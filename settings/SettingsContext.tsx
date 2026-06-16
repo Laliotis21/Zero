@@ -30,6 +30,23 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const STORAGE_KEY = 'zero.settings.v1';
 
+const THEME_MODES: readonly ThemeMode[] = ['system', 'light', 'dark'];
+const LANGUAGES: readonly Language[] = ['el', 'en'];
+const TAX_YEARS: readonly TaxYear[] = [2025, 2026];
+const CURRENCIES: readonly Currency[] = ['EUR', 'USD', 'GBP'];
+
+/** Keep only known-good values from persisted (possibly stale/corrupt) JSON. */
+function sanitize(raw: unknown): Partial<Settings> {
+  if (!raw || typeof raw !== 'object') return {};
+  const r = raw as Record<string, unknown>;
+  const out: Partial<Settings> = {};
+  if (THEME_MODES.includes(r.themeMode as ThemeMode)) out.themeMode = r.themeMode as ThemeMode;
+  if (LANGUAGES.includes(r.language as Language)) out.language = r.language as Language;
+  if (TAX_YEARS.includes(r.taxYear as TaxYear)) out.taxYear = r.taxYear as TaxYear;
+  if (CURRENCIES.includes(r.currency as Currency)) out.currency = r.currency as Currency;
+  return out;
+}
+
 interface SettingsContextValue {
   settings: Settings;
   /** Patch one or more fields; persisted automatically. */
@@ -51,7 +68,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (alive && raw) {
-          const parsed = JSON.parse(raw) as Partial<Settings>;
+          const parsed = sanitize(JSON.parse(raw));
           setSettings((prev) => ({ ...prev, ...parsed }));
         }
       } catch {

@@ -80,7 +80,14 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.screenTitle}>{tr('results.title', { year: settings.taxYear })}</Text>
+      <Text style={styles.screenTitle}>{tr('results.title', { year: result!.year })}</Text>
+
+      {result!.year !== settings.taxYear ? (
+        <View style={styles.staleBanner}>
+          <Ionicons name="alert-circle-outline" size={18} color={t.warning} />
+          <Text style={styles.staleText}>{tr('results.stale', { year: result!.year })}</Text>
+        </View>
+      ) : null}
 
       {/* Hero net income */}
       <Card style={styles.hero}>
@@ -153,6 +160,18 @@ const makeStyles = (c: Palette) =>
       paddingTop: spacing.sm,
     },
     gap: { gap: spacing.md },
+
+    staleBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.cardAlt,
+      borderColor: c.warning,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    staleText: { color: c.text, fontSize: font.small, flexShrink: 1, lineHeight: 18 },
 
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
     emptyTitle: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },

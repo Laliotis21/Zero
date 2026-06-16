@@ -48,6 +48,7 @@ const el = {
     'Βρες πόσο πρέπει να χρεώνεις ως freelancer για τον στόχο σου. Powered by AI.',
   'results.paywall.price': '€2.99 · one-time',
   'results.paywall.cta': 'Upgrade',
+  'results.stale': 'Υπολογίστηκε για {year}. Άλλαξες φορολογικό έτος — υπολόγισε ξανά.',
 
   // Budget
   'budget.empty.title': 'Δεν υπάρχει εισόδημα',
@@ -101,6 +102,9 @@ const el = {
   // Currency note
   'currency.note': 'Μόνο εμφάνιση συμβόλου — χωρίς μετατροπή ισοτιμίας.',
 
+  // Tax year note
+  'year.note': 'Ίδιοι πίνακες φόρου/ΕΦΚΑ και για τα δύο έτη μέχρι να δημοσιευθεί το ΦΕΚ 2026.',
+
   // Generic
   'common.cancel': 'Άκυρο',
 } as const;
@@ -147,6 +151,7 @@ const en: Translations = {
     'Find out how much to charge as a freelancer to hit your target. Powered by AI.',
   'results.paywall.price': '€2.99 · one-time',
   'results.paywall.cta': 'Upgrade',
+  'results.stale': 'Calculated for {year}. You changed the tax year — recalculate.',
 
   'budget.empty.title': 'No income',
   'budget.empty.body': 'Calculate your salary to see the budget split.',
@@ -194,6 +199,7 @@ const en: Translations = {
   'language.en': 'English',
 
   'currency.note': 'Symbol display only — no FX conversion.',
+  'year.note': 'Identical tax/EFKA tables for both years until the 2026 ΦΕΚ is published.',
 
   'common.cancel': 'Cancel',
 };

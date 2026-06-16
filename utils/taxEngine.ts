@@ -90,7 +90,7 @@ function taxReduction(children: number, taxable: number, table: readonly number[
   return Math.max(0, base - phaseOut);
 }
 
-const zeroResult: CalcResult = { net: 0, gross: 0, efka: 0, tax: 0 };
+const zeroResult = (year: TaxYear): CalcResult => ({ net: 0, gross: 0, efka: 0, tax: 0, year });
 
 /** Net monthly income for a salaried employee. */
 export function calcEmployee(
@@ -99,7 +99,7 @@ export function calcEmployee(
   triennia: number,
   year: TaxYear,
 ): CalcResult {
-  if (!(baseGrossMonthly > 0)) return zeroResult;
+  if (!(baseGrossMonthly > 0)) return zeroResult(year);
   const tbl = tablesFor(year);
 
   const bump = 1 + tbl.trienniaStep * Math.min(Math.max(triennia, 0), tbl.trienniaCap);
@@ -116,7 +116,7 @@ export function calcEmployee(
   );
   const tax = annualTax / tbl.employeePayments;
 
-  return { gross, efka, tax, net: gross - efka - tax };
+  return { gross, efka, tax, net: gross - efka - tax, year };
 }
 
 /**
@@ -128,7 +128,7 @@ export function calcFreelancer(
   efkaClass: number,
   year: TaxYear,
 ): CalcResult {
-  if (!(revenueMonthly > 0)) return zeroResult;
+  if (!(revenueMonthly > 0)) return zeroResult(year);
   const tbl = tablesFor(year);
   const classes = tbl.freelancerClasses;
 
@@ -141,5 +141,5 @@ export function calcFreelancer(
 
   const tax = applyBrackets(taxable, tbl.brackets) / tbl.freelancerPayments;
 
-  return { gross: revenueMonthly, efka, tax, net: revenueMonthly - efka - tax };
+  return { gross: revenueMonthly, efka, tax, net: revenueMonthly - efka - tax, year };
 }

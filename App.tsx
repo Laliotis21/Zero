@@ -7,15 +7,15 @@ import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
-import { SettingsProvider } from './settings/SettingsContext';
-import { palettes, useTheme } from './theme';
+import { SettingsProvider, useSettings } from './settings/SettingsContext';
+import { useResolvedMode, useTheme } from './theme';
 import { CalcResult, ScreenKey } from './types';
 
 function AppInner() {
   const c = useTheme();
-  // Drive the status bar from the resolved palette (honors forced light/dark),
+  // Drive the status bar from the resolved scheme (honors forced light/dark),
   // not the OS scheme — otherwise a forced override mismatches the bar.
-  const isLight = c.bg === palettes.light.bg;
+  const isLight = useResolvedMode() === 'light';
   const [screen, setScreen] = useState<ScreenKey>('home');
   const [result, setResult] = useState<CalcResult | null>(null);
 
@@ -49,11 +49,19 @@ function AppInner() {
   );
 }
 
+/** Hold first paint until persisted settings load — avoids a theme/lang flash. */
+function Gate() {
+  const c = useTheme();
+  const { hydrating } = useSettings();
+  if (hydrating) return <View style={{ flex: 1, backgroundColor: c.bg }} />;
+  return <AppInner />;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <SettingsProvider>
-        <AppInner />
+        <Gate />
       </SettingsProvider>
     </SafeAreaProvider>
   );
