@@ -37,3 +37,29 @@ export function splitEuro(value: number): { whole: string; cents: string } {
   const [whole = '0', cents = '00'] = formatBody(value).split(',');
   return { whole, cents };
 }
+
+/** Group an integer digit string with Greek dot thousands: "1234500" -> "1.234.500". */
+export function groupDigits(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * Live-format a raw amount input as the user types: groups the integer part with
+ * dot thousands and keeps at most one comma decimal (max 2 digits).
+ * "1234500" -> "1.234.500", "1234,5" -> "1.234,5". Pairs with `parseAmount`.
+ */
+export function formatAmountInput(raw: string): string {
+  // Keep digits and commas only; collapse any commas after the first.
+  let s = raw.replace(/[^0-9,]/g, '');
+  const firstComma = s.indexOf(',');
+  const hasDecimal = firstComma !== -1;
+  if (hasDecimal) {
+    s = s.slice(0, firstComma + 1) + s.slice(firstComma + 1).replace(/,/g, '');
+  }
+  const [intRaw = '', decRaw = ''] = s.split(',');
+  // Strip leading zeros but keep a lone "0".
+  const intClean = intRaw.replace(/^0+(?=\d)/, '');
+  const grouped = groupDigits(intClean);
+  if (!hasDecimal) return grouped;
+  return `${grouped},${decRaw.slice(0, 2)}`;
+}

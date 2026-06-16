@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Localization from 'expo-localization';
 import React, {
   createContext,
   ReactNode,
@@ -35,6 +36,16 @@ const LANGUAGES: readonly Language[] = ['el', 'en'];
 const TAX_YEARS: readonly TaxYear[] = [2025, 2026];
 const CURRENCIES: readonly Currency[] = ['EUR', 'USD', 'GBP'];
 
+/** First-run UI language: Greek device → 'el', anything else → 'en'. */
+function deviceLanguage(): Language {
+  try {
+    const code = Localization.getLocales()[0]?.languageCode?.toLowerCase();
+    return code === 'el' ? 'el' : 'en';
+  } catch {
+    return DEFAULT_SETTINGS.language;
+  }
+}
+
 /** Keep only known-good values from persisted (possibly stale/corrupt) JSON. */
 function sanitize(raw: unknown): Partial<Settings> {
   if (!raw || typeof raw !== 'object') return {};
@@ -67,10 +78,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (alive && raw) {
-          const parsed = sanitize(JSON.parse(raw));
-          setSettings((prev) => ({ ...prev, ...parsed }));
-        }
+        if (!alive) return;
+        const parsed = raw ? sanitize(JSON.parse(raw)) : {};
+        // First run (no persisted language) → follow the device locale.
+        if (parsed.language === undefined) parsed.language = deviceLanguage();
+        setSettings((prev) => ({ ...prev, ...parsed }));
       } catch {
         // Corrupt/unavailable storage — fall back to defaults silently.
       } finally {

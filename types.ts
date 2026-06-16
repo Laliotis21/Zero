@@ -1,3 +1,5 @@
+import type { Ionicons } from '@expo/vector-icons';
+import type { StringKey } from './i18n/strings';
 import type { TaxYear } from './settings/SettingsContext';
 
 export type Mode = 'employee' | 'freelancer';
@@ -23,9 +25,6 @@ export interface CalcResult {
    */
   presumptive?: boolean;
 }
-
-import type { Ionicons } from '@expo/vector-icons';
-import type { StringKey } from './i18n/strings';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 

@@ -1,4 +1,5 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { memo, useCallback, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -12,9 +13,11 @@ import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { SegmentControl } from '../components/ui/SegmentControl';
 import { useT } from '../i18n/strings';
+import { useSession } from '../session/SessionContext';
 import { useSettings } from '../settings/SettingsContext';
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, Mode } from '../types';
+import { formatAmountInput } from '../utils/format';
 import {
   calcEmployee,
   calcFreelancer,
@@ -23,6 +26,10 @@ import {
   tableMeta,
 } from '../utils/taxEngine';
 import { useMoney } from '../utils/money';
+
+const tick = () => {
+  Haptics.selectionAsync().catch(() => undefined);
+};
 
 interface HomeScreenProps {
   onCalculate: (result: CalcResult) => void;
@@ -42,29 +49,24 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const tr = useT();
   const money = useMoney();
   const { settings } = useSettings();
+  const { form, patchForm } = useSession();
   const taxYear = settings.taxYear;
   const styles = useMemo(() => makeStyles(t), [t]);
-  const [mode, setMode] = useState<Mode>('employee');
-  const [period, setPeriod] = useState<'month' | 'year'>('month');
-  const [gross, setGross] = useState('');
-  const [children, setChildren] = useState('0');
-  const [years, setYears] = useState(0);
-  const [activeYears, setActiveYears] = useState(0);
-  const [efkaClass, setEfkaClass] = useState(1);
+  const { mode, period, gross, children, years, activeYears, efkaClass } = form;
 
   const classes = useMemo(() => efkaFreelancerClasses(taxYear), [taxYear]);
   const maxEfkaClass = classes.length;
 
-  const pickChild = useCallback((c: string) => () => setChildren(c), []);
-  const decYears = useCallback(() => setYears((y) => Math.max(0, y - 1)), []);
-  const incYears = useCallback(() => setYears((y) => Math.min(9, y + 1)), []);
-  const decActiveYears = useCallback(() => setActiveYears((y) => Math.max(0, y - 1)), []);
-  const incActiveYears = useCallback(() => setActiveYears((y) => Math.min(40, y + 1)), []);
-  const decClass = useCallback(() => setEfkaClass((c) => Math.max(1, c - 1)), []);
-  const incClass = useCallback(
-    () => setEfkaClass((c) => Math.min(maxEfkaClass, c + 1)),
-    [maxEfkaClass],
-  );
+  const setMode = useCallback((m: Mode) => { tick(); patchForm({ mode: m }); }, [patchForm]);
+  const setPeriod = useCallback((p: 'month' | 'year') => { tick(); patchForm({ period: p }); }, [patchForm]);
+  const setGross = useCallback((text: string) => patchForm({ gross: formatAmountInput(text) }), [patchForm]);
+  const pickChild = useCallback((c: string) => () => { tick(); patchForm({ children: c }); }, [patchForm]);
+  const decYears = useCallback(() => { tick(); patchForm({ years: Math.max(0, years - 1) }); }, [patchForm, years]);
+  const incYears = useCallback(() => { tick(); patchForm({ years: Math.min(9, years + 1) }); }, [patchForm, years]);
+  const decActiveYears = useCallback(() => { tick(); patchForm({ activeYears: Math.max(0, activeYears - 1) }); }, [patchForm, activeYears]);
+  const incActiveYears = useCallback(() => { tick(); patchForm({ activeYears: Math.min(40, activeYears + 1) }); }, [patchForm, activeYears]);
+  const decClass = useCallback(() => { tick(); patchForm({ efkaClass: Math.max(1, efkaClass - 1) }); }, [patchForm, efkaClass]);
+  const incClass = useCallback(() => { tick(); patchForm({ efkaClass: Math.min(maxEfkaClass, efkaClass + 1) }); }, [patchForm, efkaClass, maxEfkaClass]);
 
   const isFreelancer = mode === 'freelancer';
   const classFee = classes[efkaClass - 1] ?? 0;
@@ -78,6 +80,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const handleCalc = useCallback(() => {
     const amount = parseAmount(gross);
     if (!(amount > 0)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     // Annual entry → monthly base (employee ÷14 incl. δώρα, freelancer ÷12).
     const monthly = period === 'year' ? amount / paymentsPerYear(taxYear, isFreelancer) : amount;
     const childCount = children === '3+' ? 3 : Number.parseInt(children, 10) || 0;
@@ -116,6 +119,9 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
                   onPress={() => setPeriod(p)}
                   activeOpacity={0.8}
                   style={[styles.periodPill, active && styles.periodPillActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={tr(p === 'month' ? 'home.period.month' : 'home.period.year')}
                 >
                   <Text style={[styles.periodText, active && styles.periodTextActive]}>
                     {tr(p === 'month' ? 'home.period.month' : 'home.period.year')}
@@ -134,7 +140,8 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
             keyboardType="decimal-pad"
             style={styles.input}
             selectionColor={t.primary}
-            maxLength={9}
+            maxLength={14}
+            accessibilityLabel={isFreelancer ? tr('home.caption.freelancer') : tr('home.caption.employee')}
           />
           <Text style={styles.euro}>{money.symbol}</Text>
         </View>
@@ -147,11 +154,11 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
           <Card style={styles.cell} compact>
             <IconLabel name="briefcase-outline" label={tr('home.yearsActive')} />
             <View style={styles.stepper}>
-              <TouchableOpacity onPress={decActiveYears} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={decActiveYears} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`− ${tr('home.yearsActive')}`}>
                 <Text style={styles.stepSign}>−</Text>
               </TouchableOpacity>
               <Text style={styles.stepValue}>{activeYears}</Text>
-              <TouchableOpacity onPress={incActiveYears} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={incActiveYears} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`+ ${tr('home.yearsActive')}`}>
                 <Text style={styles.stepSign}>+</Text>
               </TouchableOpacity>
             </View>
@@ -168,6 +175,9 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
                     onPress={pickChild(c)}
                     activeOpacity={0.8}
                     style={[styles.chip, active && styles.chipActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`${tr('home.children')}: ${c}`}
                   >
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
                   </TouchableOpacity>
@@ -181,11 +191,11 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
           <Card style={styles.cell} compact>
             <IconLabel name="pricetag-outline" label={tr('home.efkaClass')} />
             <View style={styles.stepper}>
-              <TouchableOpacity onPress={decClass} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={decClass} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`− ${tr('home.efkaClass')}`}>
                 <Text style={styles.stepSign}>−</Text>
               </TouchableOpacity>
               <Text style={styles.stepValue}>{efkaClass}</Text>
-              <TouchableOpacity onPress={incClass} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={incClass} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`+ ${tr('home.efkaClass')}`}>
                 <Text style={styles.stepSign}>+</Text>
               </TouchableOpacity>
             </View>
@@ -198,11 +208,11 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
           <Card style={styles.cell} compact>
             <IconLabel name="trending-up-outline" label={tr('home.triennia')} />
             <View style={styles.stepper}>
-              <TouchableOpacity onPress={decYears} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={decYears} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`− ${tr('home.triennia')}`}>
                 <Text style={styles.stepSign}>−</Text>
               </TouchableOpacity>
               <Text style={styles.stepValue}>{years}</Text>
-              <TouchableOpacity onPress={incYears} activeOpacity={0.8} style={styles.stepBtn}>
+              <TouchableOpacity onPress={incYears} activeOpacity={0.8} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={`+ ${tr('home.triennia')}`}>
                 <Text style={styles.stepSign}>+</Text>
               </TouchableOpacity>
             </View>
@@ -275,6 +285,8 @@ const makeStyles = (c: Palette) =>
     periodPill: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs,
+      minHeight: 36,
+      justifyContent: 'center',
       borderRadius: radius.full,
     },
     periodPillActive: { backgroundColor: c.primary },
@@ -307,7 +319,7 @@ const makeStyles = (c: Palette) =>
     chips: { flexDirection: 'row', gap: spacing.sm },
     chip: {
       flex: 1,
-      height: 38,
+      height: 44,
       borderRadius: radius.sm,
       backgroundColor: c.cardAlt,
       borderColor: c.border,
@@ -321,8 +333,8 @@ const makeStyles = (c: Palette) =>
 
     stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     stepBtn: {
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
       borderRadius: radius.sm,
       backgroundColor: c.cardAlt,
       borderColor: c.border,

@@ -121,6 +121,21 @@ const el = {
   'error.body': 'Παρουσιάστηκε απρόσμενο σφάλμα. Δοκίμασε ξανά.',
   'error.retry': 'Δοκίμασε ξανά',
 
+  // Onboarding
+  'onboarding.s1.title': 'Καθαρός μισθός, στα γρήγορα',
+  'onboarding.s1.body': 'Υπολόγισε καθαρά από μικτό — μισθωτός ή μπλοκάκι, με φόρο και ΕΦΚΑ.',
+  'onboarding.s2.title': 'Μισθωτός ή Μπλοκάκι',
+  'onboarding.s2.body': 'Διάλεξε καθεστώς. Παιδιά, τριετίες, κλάση ΕΦΚΑ και έτη δραστηριότητας λαμβάνονται υπόψη.',
+  'onboarding.s3.title': 'Έξυπνο budget',
+  'onboarding.s3.body': 'Δες πώς μοιράζεται ο μισθός σου με τον κανόνα 50/30/20.',
+  'onboarding.next': 'Επόμενο',
+  'onboarding.skip': 'Παράλειψη',
+  'onboarding.start': 'Ξεκίνα',
+  'onboarding.disclaimerTitle': 'Σημαντικό',
+  'onboarding.disclaimer':
+    'Οι υπολογισμοί είναι ενδεικτικοί και όχι επίσημη φορολογική συμβουλή. Επαλήθευσε με λογιστή ή την ΑΑΔΕ.',
+  'onboarding.accept': 'Κατάλαβα και αποδέχομαι',
+
   // Generic
   'common.cancel': 'Άκυρο',
 } as const;
@@ -231,6 +246,20 @@ const en: Translations = {
   'error.title': 'Something went wrong',
   'error.body': 'An unexpected error occurred. Please try again.',
   'error.retry': 'Try again',
+
+  'onboarding.s1.title': 'Take-home pay, fast',
+  'onboarding.s1.body': 'Turn gross into net — employee or freelancer, with tax and EFKA.',
+  'onboarding.s2.title': 'Employee or Freelancer',
+  'onboarding.s2.body': 'Pick a regime. Children, triennia, EFKA class and years active are all factored in.',
+  'onboarding.s3.title': 'Smart budget',
+  'onboarding.s3.body': 'See how your salary splits with the 50/30/20 rule.',
+  'onboarding.next': 'Next',
+  'onboarding.skip': 'Skip',
+  'onboarding.start': 'Get started',
+  'onboarding.disclaimerTitle': 'Important',
+  'onboarding.disclaimer':
+    'Figures are indicative, not official tax advice. Verify with an accountant or the tax authority (ΑΑΔΕ).',
+  'onboarding.accept': 'I understand and accept',
 
   'common.cancel': 'Cancel',
 };
