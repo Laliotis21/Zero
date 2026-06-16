@@ -20,6 +20,8 @@ interface YearTables {
   brackets: readonly Bracket[];
   /** Employee EFKA share withheld on gross. */
   efkaEmployeeRate: number;
+  /** Max monthly insurable earnings — EFKA is not withheld above this gross. */
+  efkaCeilingMonthly: number;
   /** Salary payments per year. */
   employeePayments: number;
   freelancerPayments: number;
@@ -28,6 +30,13 @@ interface YearTables {
   trienniaCap: number;
   /** Self-employed fixed EFKA classes — monthly €. */
   freelancerClasses: readonly number[];
+  /**
+   * Base presumptive minimum annual taxable income for self-employed
+   * (τεκμαρτό, Ν.5073/2023) = monthly minimum wage × 14. This is the floor for
+   * activity up to 6 years with no staff/turnover surcharges — those extra
+   * factors (+10%/3yr over 6yr, payroll, ΚΑΔ turnover) are not modeled.
+   */
+  freelancerMinAnnualIncome: number;
   /** Tax reduction base by dependent children (index 0..4). */
   reductionTable: readonly number[];
 }
@@ -41,11 +50,14 @@ const FRAMEWORK_2024_2025: YearTables = {
     { upTo: Infinity, rate: 0.44 },
   ],
   efkaEmployeeRate: 0.13867,
+  efkaCeilingMonthly: 7572.62,
   employeePayments: 14,
   freelancerPayments: 12,
   trienniaStep: 0.1,
   trienniaCap: 3,
   freelancerClasses: [244.62, 293.54, 352.25, 422.7, 507.25, 608.7],
+  // Monthly minimum wage €830 (2024) × 14.
+  freelancerMinAnnualIncome: 830 * 14,
   reductionTable: [777, 810, 900, 1120, 1340],
 };
 
@@ -62,6 +74,15 @@ export function tablesFor(year: TaxYear): YearTables {
 /** Freelancer EFKA classes for a given year (for UI pickers/labels). */
 export function efkaFreelancerClasses(year: TaxYear): readonly number[] {
   return tablesFor(year).freelancerClasses;
+}
+
+/**
+ * Salary/revenue payments per year (employee 14 incl. δώρα, freelancer 12).
+ * Used to convert an annual gross entry into the monthly base the calc expects.
+ */
+export function paymentsPerYear(year: TaxYear, isFreelancer: boolean): number {
+  const tbl = tablesFor(year);
+  return isFreelancer ? tbl.freelancerPayments : tbl.employeePayments;
 }
 
 /** Apply the progressive scale to an annual taxable amount. */
@@ -105,7 +126,9 @@ export function calcEmployee(
   const bump = 1 + tbl.trienniaStep * Math.min(Math.max(triennia, 0), tbl.trienniaCap);
   const gross = baseGrossMonthly * bump;
 
-  const efka = gross * tbl.efkaEmployeeRate;
+  // EFKA is withheld only up to the monthly insurable-earnings ceiling.
+  const insurable = Math.min(gross, tbl.efkaCeilingMonthly);
+  const efka = insurable * tbl.efkaEmployeeRate;
   const annualGross = gross * tbl.employeePayments;
   const annualEfka = efka * tbl.employeePayments;
   const taxable = annualGross - annualEfka;
@@ -119,13 +142,29 @@ export function calcEmployee(
   return { gross, efka, tax, net: gross - efka - tax, year };
 }
 
+/** Overall cap on the presumptive minimum income (τεκμαρτό), annual €. */
+const FREELANCER_MIN_CAP = 50000;
+
+/**
+ * Presumptive minimum annual taxable income for self-employed.
+ * Base (≤6 years) is increased by +10% for each completed 3-year period beyond
+ * the 6th year, capped. Payroll- and turnover-based surcharges are not modeled.
+ */
+function freelancerMinIncome(tbl: YearTables, yearsActive: number): number {
+  const extraPeriods = Math.floor(Math.max(0, yearsActive - 6) / 3);
+  const factor = 1 + 0.1 * extraPeriods;
+  return Math.min(tbl.freelancerMinAnnualIncome * factor, FREELANCER_MIN_CAP);
+}
+
 /**
  * Net monthly income for a freelancer / μπλοκάκι.
- * `efkaClass` is 1-based (1..6). No employment tax-reduction applied.
+ * `efkaClass` is 1-based (1..6). `yearsActive` drives the presumptive minimum.
+ * No employment tax-reduction applied.
  */
 export function calcFreelancer(
   revenueMonthly: number,
   efkaClass: number,
+  yearsActive: number,
   year: TaxYear,
 ): CalcResult {
   if (!(revenueMonthly > 0)) return zeroResult(year);
@@ -137,7 +176,9 @@ export function calcFreelancer(
 
   const annualGross = revenueMonthly * tbl.freelancerPayments;
   const annualEfka = efka * tbl.freelancerPayments;
-  const taxable = Math.max(0, annualGross - annualEfka);
+  // Taxable profit cannot fall below the presumptive minimum (τεκμαρτό).
+  const profit = Math.max(0, annualGross - annualEfka);
+  const taxable = Math.max(profit, freelancerMinIncome(tbl, yearsActive));
 
   const tax = applyBrackets(taxable, tbl.brackets) / tbl.freelancerPayments;
 

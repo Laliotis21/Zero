@@ -15,7 +15,12 @@ import { useT } from '../i18n/strings';
 import { useSettings } from '../settings/SettingsContext';
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, Mode } from '../types';
-import { calcEmployee, calcFreelancer, efkaFreelancerClasses } from '../utils/taxEngine';
+import {
+  calcEmployee,
+  calcFreelancer,
+  efkaFreelancerClasses,
+  paymentsPerYear,
+} from '../utils/taxEngine';
 import { useMoney } from '../utils/money';
 
 interface HomeScreenProps {
@@ -39,9 +44,11 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const taxYear = settings.taxYear;
   const styles = useMemo(() => makeStyles(t), [t]);
   const [mode, setMode] = useState<Mode>('employee');
+  const [period, setPeriod] = useState<'month' | 'year'>('month');
   const [gross, setGross] = useState('');
   const [children, setChildren] = useState('0');
   const [years, setYears] = useState(0);
+  const [activeYears, setActiveYears] = useState(0);
   const [efkaClass, setEfkaClass] = useState(1);
 
   const classes = useMemo(() => efkaFreelancerClasses(taxYear), [taxYear]);
@@ -50,6 +57,8 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const pickChild = useCallback((c: string) => () => setChildren(c), []);
   const decYears = useCallback(() => setYears((y) => Math.max(0, y - 1)), []);
   const incYears = useCallback(() => setYears((y) => Math.min(9, y + 1)), []);
+  const decActiveYears = useCallback(() => setActiveYears((y) => Math.max(0, y - 1)), []);
+  const incActiveYears = useCallback(() => setActiveYears((y) => Math.min(40, y + 1)), []);
   const decClass = useCallback(() => setEfkaClass((c) => Math.max(1, c - 1)), []);
   const incClass = useCallback(
     () => setEfkaClass((c) => Math.min(maxEfkaClass, c + 1)),
@@ -61,12 +70,14 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
 
   const handleCalc = useCallback(() => {
     const amount = parseAmount(gross);
+    // Annual entry → monthly base (employee ÷14 incl. δώρα, freelancer ÷12).
+    const monthly = period === 'year' ? amount / paymentsPerYear(taxYear, isFreelancer) : amount;
     const childCount = children === '3+' ? 3 : Number.parseInt(children, 10) || 0;
     const result = isFreelancer
-      ? calcFreelancer(amount, efkaClass, taxYear)
-      : calcEmployee(amount, childCount, years, taxYear);
+      ? calcFreelancer(monthly, efkaClass, activeYears, taxYear)
+      : calcEmployee(monthly, childCount, years, taxYear);
     onCalculate(result);
-  }, [gross, children, years, efkaClass, isFreelancer, taxYear, onCalculate]);
+  }, [gross, period, children, years, activeYears, efkaClass, isFreelancer, taxYear, onCalculate]);
 
   return (
     <ScrollView
@@ -84,9 +95,28 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
 
       {/* Gross salary / revenue input */}
       <View style={styles.inputBlock}>
-        <Text style={styles.inputCaption}>
-          {isFreelancer ? tr('home.caption.freelancer') : tr('home.caption.employee')}
-        </Text>
+        <View style={styles.captionRow}>
+          <Text style={styles.inputCaption}>
+            {isFreelancer ? tr('home.caption.freelancer') : tr('home.caption.employee')}
+          </Text>
+          <View style={styles.periodToggle}>
+            {(['month', 'year'] as const).map((p) => {
+              const active = p === period;
+              return (
+                <TouchableOpacity
+                  key={p}
+                  onPress={() => setPeriod(p)}
+                  activeOpacity={0.8}
+                  style={[styles.periodPill, active && styles.periodPillActive]}
+                >
+                  <Text style={[styles.periodText, active && styles.periodTextActive]}>
+                    {tr(p === 'month' ? 'home.period.month' : 'home.period.year')}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
         <View style={styles.inputRow}>
           <TextInput
             value={gross}
@@ -104,24 +134,39 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
 
       {/* Bento 2x2 grid */}
       <View style={styles.grid}>
-        <Card style={styles.cell} compact>
-          <IconLabel name="people-outline" label={tr('home.children')} />
-          <View style={styles.chips}>
-            {CHILD_OPTIONS.map((c) => {
-              const active = c === children;
-              return (
-                <TouchableOpacity
-                  key={c}
-                  onPress={pickChild(c)}
-                  activeOpacity={0.8}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Card>
+        {isFreelancer ? (
+          <Card style={styles.cell} compact>
+            <IconLabel name="briefcase-outline" label={tr('home.yearsActive')} />
+            <View style={styles.stepper}>
+              <TouchableOpacity onPress={decActiveYears} activeOpacity={0.8} style={styles.stepBtn}>
+                <Text style={styles.stepSign}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.stepValue}>{activeYears}</Text>
+              <TouchableOpacity onPress={incActiveYears} activeOpacity={0.8} style={styles.stepBtn}>
+                <Text style={styles.stepSign}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        ) : (
+          <Card style={styles.cell} compact>
+            <IconLabel name="people-outline" label={tr('home.children')} />
+            <View style={styles.chips}>
+              {CHILD_OPTIONS.map((c) => {
+                const active = c === children;
+                return (
+                  <TouchableOpacity
+                    key={c}
+                    onPress={pickChild(c)}
+                    activeOpacity={0.8}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Card>
+        )}
 
         {isFreelancer ? (
           <Card style={styles.cell} compact>
@@ -194,7 +239,28 @@ const makeStyles = (c: Palette) =>
       letterSpacing: 1,
     },
     inputBlock: { gap: spacing.sm },
-    inputCaption: { color: c.textMuted, fontSize: font.small, fontWeight: weight.medium },
+    captionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    inputCaption: { color: c.textMuted, fontSize: font.small, fontWeight: weight.medium, flexShrink: 1 },
+    periodToggle: {
+      flexDirection: 'row',
+      backgroundColor: c.card,
+      borderColor: c.border,
+      borderWidth: 1,
+      borderRadius: radius.full,
+      padding: 2,
+    },
+    periodPill: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.full,
+    },
+    periodPillActive: { backgroundColor: c.primary },
+    periodText: { color: c.textMuted, fontSize: font.small, fontWeight: weight.semibold },
+    periodTextActive: { color: c.onAccent, fontWeight: weight.bold },
     inputRow: { flexDirection: 'row', alignItems: 'baseline' },
     input: {
       flex: 1,
