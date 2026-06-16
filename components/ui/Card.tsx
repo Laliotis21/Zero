@@ -1,6 +1,6 @@
-import React, { memo, ReactNode } from 'react';
+import React, { memo, ReactNode, useMemo } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { colors, radius, spacing } from '../../theme';
+import { Palette, radius, spacing, useTheme } from '../../theme';
 
 interface CardProps {
   children: ReactNode;
@@ -11,22 +11,25 @@ interface CardProps {
 
 /** Bento card shell — elevated surface + subtle border. */
 function CardBase({ children, style, compact = false }: CardProps) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={[styles.card, compact && styles.compact, style]}>{children}</View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-  },
-  compact: {
-    padding: spacing.lg,
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.card,
+      borderColor: c.border,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+    },
+    compact: {
+      padding: spacing.lg,
+    },
+  });
 
 export const Card = memo(CardBase);

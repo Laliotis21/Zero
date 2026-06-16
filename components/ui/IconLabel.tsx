@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo } from 'react';
 import { StyleSheet, Text, TextStyle, View } from 'react-native';
-import { colors, font, spacing, weight } from '../../theme';
+import { font, spacing, useTheme, weight } from '../../theme';
 import { IconName } from '../../types';
 
 interface IconLabelProps {
   name: IconName;
   label: string;
-  /** Icon + text color. Defaults to primary text. */
+  /** Icon + text color. Defaults to primary text for the active theme. */
   color?: string;
   /** Icon glyph color when it should differ from the text. */
   iconColor?: string;
@@ -22,15 +22,17 @@ interface IconLabelProps {
 function IconLabelBase({
   name,
   label,
-  color = colors.text,
+  color,
   iconColor,
   size = 18,
   textStyle,
 }: IconLabelProps) {
+  const c = useTheme();
+  const resolved = color ?? c.text;
   return (
     <View style={styles.row}>
-      <Ionicons name={name} size={size} color={iconColor ?? color} />
-      <Text style={[styles.text, { color }, textStyle]} numberOfLines={1}>
+      <Ionicons name={name} size={size} color={iconColor ?? resolved} />
+      <Text style={[styles.text, { color: resolved }, textStyle]} numberOfLines={1}>
         {label}
       </Text>
     </View>

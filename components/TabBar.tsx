@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, font, glow, radius, spacing, weight } from '../theme';
+import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { ScreenKey } from '../types';
 
 interface TabDef {
@@ -23,6 +23,8 @@ const TABS: readonly TabDef[] = [
 ];
 
 function TabBarBase({ active, onChange }: TabBarProps) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const insets = useSafeAreaInsets();
   const handle = useCallback((k: ScreenKey) => () => onChange(k), [onChange]);
 
@@ -38,11 +40,11 @@ function TabBarBase({ active, onChange }: TabBarProps) {
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
           >
-            <View style={[styles.iconWrap, isActive && styles.iconWrapActive, isActive && glow(colors.primary, 0.4, 14)]}>
+            <View style={[styles.iconWrap, isActive && styles.iconWrapActive, isActive && glow(c.primary, 0.4, 14)]}>
               <Ionicons
                 name={tab.icon}
                 size={22}
-                color={isActive ? colors.bg : colors.textMuted}
+                color={isActive ? c.onAccent : c.textMuted}
               />
             </View>
             <Text style={[styles.label, isActive && styles.labelActive]}>{tab.label}</Text>
@@ -53,39 +55,40 @@ function TabBarBase({ active, onChange }: TabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    backgroundColor: colors.bgElevated,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  iconWrap: {
-    width: 46,
-    height: 36,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: colors.primary,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: font.micro,
-    fontWeight: weight.medium,
-  },
-  labelActive: {
-    color: colors.text,
-    fontWeight: weight.bold,
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: 'row',
+      backgroundColor: c.bgElevated,
+      borderTopColor: c.border,
+      borderTopWidth: 1,
+      paddingTop: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    iconWrap: {
+      width: 46,
+      height: 36,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconWrapActive: {
+      backgroundColor: c.primary,
+    },
+    label: {
+      color: c.textMuted,
+      fontSize: font.micro,
+      fontWeight: weight.medium,
+    },
+    labelActive: {
+      color: c.text,
+      fontWeight: weight.bold,
+    },
+  });
 
 export const TabBar = memo(TabBarBase);

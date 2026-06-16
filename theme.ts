@@ -1,12 +1,27 @@
-import { Platform, TextStyle, ViewStyle } from 'react-native';
+import { Platform, TextStyle, useColorScheme, ViewStyle } from 'react-native';
 
 /**
  * ZERØ design system — single source of truth.
- * 2026 fintech dark: monochrome slate surfaces + single blue accent.
- * Restrained, high-contrast, professional. No neon.
+ * 2026 fintech: monochrome surfaces + single blue accent. System-adaptive
+ * (light/dark follow the OS). Accent + semantic colors are identical in both
+ * modes; only surfaces and text swap. Restrained, high-contrast, no neon.
  */
 
-export const colors = {
+/** Brand + semantic — same in light and dark (tuned to read on both). */
+const accent = {
+  /** Brand accent — primary actions, active states. */
+  primary: '#3D7BFF',
+  primaryDim: '#2B5FD9',
+  /** Text/icon color that sits on top of a filled accent surface. */
+  onAccent: '#FFFFFF',
+  /** Semantic — calm, not neon. */
+  positive: '#2FB37A',
+  negative: '#E5564E',
+  warning: '#D9A441',
+} as const;
+
+/** Mode-specific surfaces + text. */
+const darkSurfaces = {
   bg: '#0B0C10',
   bgElevated: '#111319',
   card: '#15171E',
@@ -14,14 +29,39 @@ export const colors = {
   border: '#262A35',
   text: '#F5F6F8',
   textMuted: '#9094A1',
-  /** Brand accent — primary actions, active states. */
-  primary: '#3D7BFF',
-  primaryDim: '#2B5FD9',
-  /** Semantic — calm, not neon. */
-  positive: '#2FB37A',
-  negative: '#E5564E',
-  warning: '#D9A441',
 } as const;
+
+const lightSurfaces = {
+  bg: '#F7F8FA',
+  bgElevated: '#FFFFFF',
+  card: '#FFFFFF',
+  cardAlt: '#EEF1F5',
+  border: '#E3E6EC',
+  text: '#0E1116',
+  textMuted: '#5B6270',
+} as const;
+
+export type Palette = Record<keyof typeof accent | keyof typeof darkSurfaces, string>;
+
+export const palettes: Record<'dark' | 'light', Palette> = {
+  dark: { ...accent, ...darkSurfaces },
+  light: { ...accent, ...lightSurfaces },
+};
+
+/**
+ * Active palette for the current OS color scheme. Re-renders on OS toggle
+ * (useColorScheme subscribes to scheme changes).
+ */
+export function useTheme(): Palette {
+  const scheme = useColorScheme();
+  return scheme === 'light' ? palettes.light : palettes.dark;
+}
+
+/**
+ * Static dark palette. Safe only for accent/semantic colors (identical in both
+ * modes). For surfaces/text inside a component, use `useTheme()` instead.
+ */
+export const colors = palettes.dark;
 
 export const spacing = {
   xs: 4,

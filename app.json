@@ -4,7 +4,7 @@
     "slug": "zero",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#0B0C10",
     "splash": {
       "resizeMode": "contain",

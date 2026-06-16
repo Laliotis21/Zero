@@ -10,9 +10,8 @@ import {
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
-import { PulseDot } from '../components/ui/PulseDot';
 import { SegmentControl } from '../components/ui/SegmentControl';
-import { colors, font, radius, spacing, weight } from '../theme';
+import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, Mode } from '../types';
 import { EFKA_FREELANCER_CLASSES, calcEmployee, calcFreelancer } from '../utils/taxEngine';
 import { formatEuro } from '../utils/format';
@@ -32,6 +31,8 @@ function parseAmount(raw: string): number {
 }
 
 function HomeScreenBase({ onCalculate }: HomeScreenProps) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [mode, setMode] = useState<Mode>('employee');
   const [gross, setGross] = useState('');
   const [children, setChildren] = useState('0');
@@ -69,10 +70,6 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.logo}>ZERØ</Text>
-        <View style={styles.aiStatus}>
-          <PulseDot />
-          <Text style={styles.aiText}>AI Online</Text>
-        </View>
       </View>
 
       <SegmentControl value={mode} onChange={setMode} />
@@ -87,10 +84,10 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
             value={gross}
             onChangeText={setGross}
             placeholder="0"
-            placeholderTextColor={colors.border}
+            placeholderTextColor={t.border}
             keyboardType="decimal-pad"
             style={styles.input}
-            selectionColor={colors.primary}
+            selectionColor={t.primary}
             maxLength={9}
           />
           <Text style={styles.euro}>€</Text>
@@ -165,95 +162,83 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.sm,
-  },
-  logo: {
-    color: colors.text,
-    fontSize: font.big,
-    fontWeight: weight.black,
-    letterSpacing: 1,
-  },
-  aiStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.full,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  aiText: { color: colors.textMuted, fontSize: font.small, fontWeight: weight.semibold },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xxxl,
+      gap: spacing.xl,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: spacing.sm,
+    },
+    logo: {
+      color: c.text,
+      fontSize: font.big,
+      fontWeight: weight.black,
+      letterSpacing: 1,
+    },
+    inputBlock: { gap: spacing.sm },
+    inputCaption: { color: c.textMuted, fontSize: font.small, fontWeight: weight.medium },
+    inputRow: { flexDirection: 'row', alignItems: 'baseline' },
+    input: {
+      flex: 1,
+      color: c.text,
+      fontSize: font.hero,
+      fontWeight: weight.black,
+      padding: 0,
+      letterSpacing: -1,
+    },
+    euro: { color: c.primary, fontSize: font.big, fontWeight: weight.bold },
 
-  inputBlock: { gap: spacing.sm },
-  inputCaption: { color: colors.textMuted, fontSize: font.small, fontWeight: weight.medium },
-  inputRow: { flexDirection: 'row', alignItems: 'baseline' },
-  input: {
-    flex: 1,
-    color: colors.text,
-    fontSize: font.hero,
-    fontWeight: weight.black,
-    padding: 0,
-    letterSpacing: -1,
-  },
-  euro: { color: colors.primary, fontSize: font.big, fontWeight: weight.bold },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    cell: {
+      flexGrow: 1,
+      flexBasis: '47%',
+      gap: spacing.md,
+    },
+    cellValue: { color: c.primary, fontSize: font.title, fontWeight: weight.bold },
+    cellHint: { color: c.textMuted, fontSize: font.micro },
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  cell: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    gap: spacing.md,
-  },
-  cellValue: { color: colors.primary, fontSize: font.title, fontWeight: weight.bold },
-  cellHint: { color: colors.textMuted, fontSize: font.micro },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    chip: {
+      flex: 1,
+      height: 38,
+      borderRadius: radius.sm,
+      backgroundColor: c.cardAlt,
+      borderColor: c.border,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipActive: { backgroundColor: c.primary, borderColor: c.primary },
+    chipText: { color: c.textMuted, fontSize: font.body, fontWeight: weight.semibold },
+    chipTextActive: { color: c.onAccent, fontWeight: weight.bold },
 
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  chip: {
-    flex: 1,
-    height: 38,
-    borderRadius: radius.sm,
-    backgroundColor: colors.cardAlt,
-    borderColor: colors.border,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.semibold },
-  chipTextActive: { color: colors.bg, fontWeight: weight.bold },
+    stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    stepBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.sm,
+      backgroundColor: c.cardAlt,
+      borderColor: c.border,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepSign: { color: c.primary, fontSize: font.title, fontWeight: weight.bold },
+    stepValue: { color: c.text, fontSize: font.big, fontWeight: weight.black },
+    classFee: { color: c.primary, fontSize: font.small, fontWeight: weight.semibold, textAlign: 'center' },
 
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
-    backgroundColor: colors.cardAlt,
-    borderColor: colors.border,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepSign: { color: colors.primary, fontSize: font.title, fontWeight: weight.bold },
-  stepValue: { color: colors.text, fontSize: font.big, fontWeight: weight.black },
-  classFee: { color: colors.primary, fontSize: font.small, fontWeight: weight.semibold, textAlign: 'center' },
-
-  cta: { marginTop: spacing.sm },
-});
+    cta: { marginTop: spacing.sm },
+  });
 
 export const HomeScreen = memo(HomeScreenBase);

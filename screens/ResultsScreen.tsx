@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { colors, font, glow, radius, spacing, weight } from '../theme';
+import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, IconName } from '../types';
 import { formatEuro, splitEuro } from '../utils/format';
 
@@ -21,13 +21,15 @@ interface DeductionRowProps {
 }
 
 const DeductionRow = memo(function DeductionRow({ icon, label, amount }: DeductionRowProps) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <View style={styles.dedRow}>
       <IconLabel
         name={icon}
         label={label}
-        color={colors.textMuted}
-        iconColor={colors.textMuted}
+        color={t.textMuted}
+        iconColor={t.textMuted}
         size={17}
         textStyle={styles.dedLabel}
       />
@@ -37,6 +39,8 @@ const DeductionRow = memo(function DeductionRow({ icon, label, amount }: Deducti
 });
 
 function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const handleUpgrade = useCallback(() => onUpgrade(), [onUpgrade]);
 
   const view = useMemo(() => {
@@ -55,7 +59,7 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
   if (!view) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="calculator-outline" size={44} color={colors.textMuted} />
+        <Ionicons name="calculator-outline" size={44} color={t.textMuted} />
         <Text style={styles.emptyTitle}>Κανένας υπολογισμός ακόμη</Text>
         <Text style={styles.emptyBody}>
           Συμπλήρωσε μισθό στην αρχική και πάτα ΥΠΟΛΟΓΙΣΜΟΣ.
@@ -77,8 +81,8 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         <IconLabel
           name="wallet-outline"
           label="Καθαρά στο χέρι"
-          color={colors.textMuted}
-          iconColor={colors.textMuted}
+          color={t.textMuted}
+          iconColor={t.textMuted}
           size={16}
           textStyle={styles.heroCaption}
         />
@@ -108,20 +112,20 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         <ProgressBar ratio={view.ratio} />
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.positive }]} />
+            <View style={[styles.legendDot, { backgroundColor: t.positive }]} />
             <Text style={styles.legendGood}>Καθαρά {Math.round(view.ratio * 100)}%</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.negative }]} />
+            <View style={[styles.legendDot, { backgroundColor: t.negative }]} />
             <Text style={styles.legendBad}>Κρατήσεις {Math.round((1 - view.ratio) * 100)}%</Text>
           </View>
         </View>
       </Card>
 
       {/* Paywall */}
-      <Card style={[styles.paywall, glow(colors.primary, 0.18, 22)]}>
+      <Card style={[styles.paywall, glow(t.primary, 0.18, 22)]}>
         <View style={styles.lockBadge}>
-          <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
+          <Ionicons name="lock-closed-outline" size={24} color={t.primary} />
         </View>
         <Text style={styles.paywallTitle}>AI Reverse Pricing</Text>
         <Text style={styles.paywallBody}>
@@ -134,63 +138,64 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg },
-  screenTitle: {
-    color: colors.text,
-    fontSize: font.title,
-    fontWeight: weight.bold,
-    paddingTop: spacing.sm,
-  },
-  gap: { gap: spacing.md },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg },
+    screenTitle: {
+      color: c.text,
+      fontSize: font.title,
+      fontWeight: weight.bold,
+      paddingTop: spacing.sm,
+    },
+    gap: { gap: spacing.md },
 
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
-  emptyTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },
-  emptyBody: { color: colors.textMuted, fontSize: font.body, textAlign: 'center', lineHeight: 21 },
+    empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
+    emptyTitle: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },
+    emptyBody: { color: c.textMuted, fontSize: font.body, textAlign: 'center', lineHeight: 21 },
 
-  hero: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.xs, borderColor: colors.primary },
-  heroCaption: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.medium },
-  heroRow: { flexDirection: 'row', alignItems: 'baseline' },
-  heroWhole: {
-    color: colors.text,
-    fontSize: font.hero,
-    fontWeight: weight.black,
-    letterSpacing: -2,
-  },
-  heroCents: { color: colors.positive, fontSize: font.big, fontWeight: weight.bold },
-  heroSub: { color: colors.textMuted, fontSize: font.small },
+    hero: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.xs, borderColor: c.primary },
+    heroCaption: { color: c.textMuted, fontSize: font.body, fontWeight: weight.medium },
+    heroRow: { flexDirection: 'row', alignItems: 'baseline' },
+    heroWhole: {
+      color: c.text,
+      fontSize: font.hero,
+      fontWeight: weight.black,
+      letterSpacing: -2,
+    },
+    heroCents: { color: c.positive, fontSize: font.big, fontWeight: weight.bold },
+    heroSub: { color: c.textMuted, fontSize: font.small },
 
-  cardTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold },
-  dedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dedLabel: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.regular },
-  dedAmount: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold },
-  divider: { height: 1, backgroundColor: colors.border },
-  totalLabel: { color: colors.text, fontSize: font.body, fontWeight: weight.semibold },
-  totalAmount: { color: colors.negative, fontSize: font.subtitle, fontWeight: weight.black },
+    cardTitle: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold },
+    dedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    dedLabel: { color: c.textMuted, fontSize: font.body, fontWeight: weight.regular },
+    dedAmount: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold },
+    divider: { height: 1, backgroundColor: c.border },
+    totalLabel: { color: c.text, fontSize: font.body, fontWeight: weight.semibold },
+    totalAmount: { color: c.negative, fontSize: font.subtitle, fontWeight: weight.black },
 
-  legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendGood: { color: colors.positive, fontSize: font.small, fontWeight: weight.semibold },
-  legendBad: { color: colors.negative, fontSize: font.small, fontWeight: weight.semibold },
+    legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    legendDot: { width: 8, height: 8, borderRadius: 4 },
+    legendGood: { color: c.positive, fontSize: font.small, fontWeight: weight.semibold },
+    legendBad: { color: c.negative, fontSize: font.small, fontWeight: weight.semibold },
 
-  paywall: { alignItems: 'center', gap: spacing.sm, borderColor: colors.primary },
-  lockBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
-    backgroundColor: colors.cardAlt,
-    borderColor: colors.primary,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  paywallTitle: { color: colors.text, fontSize: font.title, fontWeight: weight.black },
-  paywallBody: { color: colors.textMuted, fontSize: font.small, textAlign: 'center', lineHeight: 20 },
-  price: { color: colors.primary, fontSize: font.body, fontWeight: weight.bold, marginTop: spacing.xs },
-  upgradeBtn: { alignSelf: 'stretch', marginTop: spacing.sm },
-});
+    paywall: { alignItems: 'center', gap: spacing.sm, borderColor: c.primary },
+    lockBadge: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.full,
+      backgroundColor: c.cardAlt,
+      borderColor: c.primary,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.xs,
+    },
+    paywallTitle: { color: c.text, fontSize: font.title, fontWeight: weight.black },
+    paywallBody: { color: c.textMuted, fontSize: font.small, textAlign: 'center', lineHeight: 20 },
+    price: { color: c.primary, fontSize: font.body, fontWeight: weight.bold, marginTop: spacing.xs },
+    upgradeBtn: { alignSelf: 'stretch', marginTop: spacing.sm },
+  });
 
 export const ResultsScreen = memo(ResultsScreenBase);

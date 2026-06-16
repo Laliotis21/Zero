@@ -57,7 +57,7 @@ function GlowButtonBase({
     ? { backgroundColor: color, ...glow(color, 0.4, 18) }
     : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color };
 
-  const tint = isSolid ? colors.bg : color;
+  const tint = isSolid ? colors.onAccent : color;
   const textStyle: TextStyle = { color: tint };
 
   return (

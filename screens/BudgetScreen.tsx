@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
-import { colors, font, radius, spacing, weight } from '../theme';
+import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { BudgetBucket } from '../types';
 import { buildBudget } from '../utils/budget';
 import { formatEuro } from '../utils/format';
@@ -14,6 +14,8 @@ interface BudgetScreenProps {
 }
 
 const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   return (
     <Card style={[styles.bucket, { borderColor: bucket.accent }]}>
       <View style={styles.bucketHead}>
@@ -42,8 +44,8 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
             <IconLabel
               name={item.icon}
               label={item.label}
-              color={colors.textMuted}
-              iconColor={colors.textMuted}
+              color={t.textMuted}
+              iconColor={t.textMuted}
               size={16}
               textStyle={styles.itemLabel}
             />
@@ -56,6 +58,8 @@ const BucketCard = memo(function BucketCard({ bucket }: { bucket: BudgetBucket }
 });
 
 function BudgetScreenBase({ net }: BudgetScreenProps) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const buckets = useMemo(() => buildBudget(net), [net]);
   const onSave = useCallback(() => undefined, []);
   const onExport = useCallback(() => undefined, []);
@@ -63,7 +67,7 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
   if (net <= 0) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="pie-chart-outline" size={44} color={colors.textMuted} />
+        <Ionicons name="pie-chart-outline" size={44} color={t.textMuted} />
         <Text style={styles.emptyTitle}>Δεν υπάρχει εισόδημα</Text>
         <Text style={styles.emptyBody}>Υπολόγισε τον μισθό σου για να δεις το budget split.</Text>
       </View>
@@ -94,45 +98,46 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg },
-  screenTitle: {
-    color: colors.text,
-    fontSize: font.title,
-    fontWeight: weight.bold,
-    paddingTop: spacing.sm,
-  },
-  intro: { color: colors.textMuted, fontSize: font.small, lineHeight: 21 },
-  introStrong: { color: colors.text, fontWeight: weight.bold },
-  tag: { color: colors.positive, fontWeight: weight.semibold },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg },
+    screenTitle: {
+      color: c.text,
+      fontSize: font.title,
+      fontWeight: weight.bold,
+      paddingTop: spacing.sm,
+    },
+    intro: { color: c.textMuted, fontSize: font.small, lineHeight: 21 },
+    introStrong: { color: c.text, fontWeight: weight.bold },
+    tag: { color: c.positive, fontWeight: weight.semibold },
 
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
-  emptyTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },
-  emptyBody: { color: colors.textMuted, fontSize: font.body, textAlign: 'center', lineHeight: 21 },
+    empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl, gap: spacing.sm },
+    emptyTitle: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold, marginTop: spacing.sm },
+    emptyBody: { color: c.textMuted, fontSize: font.body, textAlign: 'center', lineHeight: 21 },
 
-  bucket: { gap: spacing.md },
-  bucketHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bucketTitle: { color: colors.text, fontSize: font.subtitle, fontWeight: weight.bold, letterSpacing: 0.5, flexShrink: 0 },
-  pctPill: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 3 },
-  pctText: { color: colors.bg, fontSize: font.small, fontWeight: weight.black },
-  bucketAmount: { fontSize: font.big, fontWeight: weight.black, letterSpacing: -1 },
+    bucket: { gap: spacing.md },
+    bucketHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    bucketTitle: { color: c.text, fontSize: font.subtitle, fontWeight: weight.bold, letterSpacing: 0.5, flexShrink: 0 },
+    pctPill: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 3 },
+    pctText: { color: c.onAccent, fontSize: font.small, fontWeight: weight.black },
+    bucketAmount: { fontSize: font.big, fontWeight: weight.black, letterSpacing: -1 },
 
-  sliverTrack: {
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.cardAlt,
-    overflow: 'hidden',
-  },
-  sliverFill: { height: '100%', borderRadius: radius.full },
+    sliverTrack: {
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.cardAlt,
+      overflow: 'hidden',
+    },
+    sliverFill: { height: '100%', borderRadius: radius.full },
 
-  items: { gap: spacing.sm, marginTop: spacing.xs },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemLabel: { color: colors.textMuted, fontSize: font.body, fontWeight: weight.regular },
-  itemAmount: { color: colors.text, fontSize: font.body, fontWeight: weight.semibold },
+    items: { gap: spacing.sm, marginTop: spacing.xs },
+    itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    itemLabel: { color: c.textMuted, fontSize: font.body, fontWeight: weight.regular },
+    itemAmount: { color: c.text, fontSize: font.body, fontWeight: weight.semibold },
 
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  action: { flex: 1 },
-});
+    actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+    action: { flex: 1 },
+  });
 
 export const BudgetScreen = memo(BudgetScreenBase);
