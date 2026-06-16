@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { ReactNode, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './components/TabBar';
@@ -10,6 +10,11 @@ import { ResultsScreen } from './screens/ResultsScreen';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 import { useResolvedMode, useTheme } from './theme';
 import { CalcResult, ScreenKey } from './types';
+
+/** Keeps a screen mounted (state preserved) while toggling its visibility. */
+function Pane({ active, children }: { active: boolean; children: ReactNode }) {
+  return <View style={{ flex: 1, display: active ? 'flex' : 'none' }}>{children}</View>;
+}
 
 function AppInner() {
   const c = useTheme();
@@ -25,25 +30,26 @@ function AppInner() {
   }, []);
   const goBudget = useCallback(() => setScreen('budget'), []);
 
-  const current = useMemo(() => {
-    switch (screen) {
-      case 'home':
-        return <HomeScreen onCalculate={handleCalculate} />;
-      case 'results':
-        return <ResultsScreen result={result} onUpgrade={goBudget} />;
-      case 'budget':
-        return <BudgetScreen net={result?.net ?? 0} />;
-      case 'profile':
-        return <ProfileScreen net={result?.net ?? 0} onUpgrade={goBudget} />;
-      default:
-        return null;
-    }
-  }, [screen, result, handleCalculate, goBudget]);
+  const net = result?.net ?? 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'left', 'right']}>
       <StatusBar style={isLight ? 'dark' : 'light'} />
-      <View style={{ flex: 1 }}>{current}</View>
+      <View style={{ flex: 1 }}>
+        {/* All screens stay mounted so form inputs / scroll persist across tabs. */}
+        <Pane active={screen === 'home'}>
+          <HomeScreen onCalculate={handleCalculate} />
+        </Pane>
+        <Pane active={screen === 'results'}>
+          <ResultsScreen result={result} onUpgrade={goBudget} />
+        </Pane>
+        <Pane active={screen === 'budget'}>
+          <BudgetScreen net={net} />
+        </Pane>
+        <Pane active={screen === 'profile'}>
+          <ProfileScreen net={net} onUpgrade={goBudget} />
+        </Pane>
+      </View>
       <TabBar active={screen} onChange={setScreen} />
     </SafeAreaView>
   );
