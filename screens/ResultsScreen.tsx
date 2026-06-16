@@ -11,6 +11,7 @@ import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme
 import { CalcResult, IconName } from '../types';
 import { splitEuro } from '../utils/format';
 import { useMoney } from '../utils/money';
+import { tableMeta } from '../utils/taxEngine';
 
 interface ResultsScreenProps {
   result: CalcResult | null;
@@ -64,12 +65,26 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
     };
   }, [result]);
 
-  if (!view) {
+  // No calculation yet.
+  if (!result) {
     return (
       <View style={styles.empty}>
         <Ionicons name="calculator-outline" size={44} color={t.textMuted} />
         <Text style={styles.emptyTitle}>{tr('results.empty.title')}</Text>
         <Text style={styles.emptyBody}>{tr('results.empty.body')}</Text>
+      </View>
+    );
+  }
+
+  // Calculated, but deductions ≥ revenue (common for freelancer τεκμαρτό).
+  if (!view) {
+    return (
+      <View style={styles.empty}>
+        <Ionicons name="trending-down-outline" size={44} color={t.warning} />
+        <Text style={styles.emptyTitle}>{tr('results.negative.title')}</Text>
+        <Text style={styles.emptyBody}>
+          {result.presumptive ? tr('results.negative.presumptive') : tr('results.negative.body')}
+        </Text>
       </View>
     );
   }
@@ -86,6 +101,13 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         <View style={styles.staleBanner}>
           <Ionicons name="alert-circle-outline" size={18} color={t.warning} />
           <Text style={styles.staleText}>{tr('results.stale', { year: result!.year })}</Text>
+        </View>
+      ) : null}
+
+      {result!.presumptive ? (
+        <View style={styles.staleBanner}>
+          <Ionicons name="information-circle-outline" size={18} color={t.warning} />
+          <Text style={styles.staleText}>{tr('results.negative.presumptive')}</Text>
         </View>
       ) : null}
 
@@ -145,6 +167,13 @@ function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
         <Text style={styles.price}>{tr('results.paywall.price')}</Text>
         <GlowButton label={tr('results.paywall.cta')} icon="arrow-up-circle-outline" onPress={handleUpgrade} style={styles.upgradeBtn} />
       </Card>
+
+      <Text style={styles.source}>
+        {tr('results.source', {
+          source: tableMeta(result!.year).source,
+          date: tableMeta(result!.year).asOfDate,
+        })}
+      </Text>
     </ScrollView>
   );
 }
@@ -219,6 +248,7 @@ const makeStyles = (c: Palette) =>
     paywallBody: { color: c.textMuted, fontSize: font.small, textAlign: 'center', lineHeight: 20 },
     price: { color: c.primary, fontSize: font.body, fontWeight: weight.bold, marginTop: spacing.xs },
     upgradeBtn: { alignSelf: 'stretch', marginTop: spacing.sm },
+    source: { color: c.textMuted, fontSize: font.micro, textAlign: 'center', marginTop: spacing.xs },
   });
 
 export const ResultsScreen = memo(ResultsScreenBase);

@@ -20,6 +20,8 @@ interface GlowButtonProps {
   icon?: IconName;
   /** Outline (ghost) instead of filled accent. */
   variant?: 'solid' | 'outline';
+  /** Non-interactive + dimmed (e.g. invalid form). */
+  disabled?: boolean;
   style?: ViewStyle;
 }
 
@@ -30,6 +32,7 @@ function GlowButtonBase({
   color = colors.primary,
   icon,
   variant = 'solid',
+  disabled = false,
   style,
 }: GlowButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -48,27 +51,30 @@ function GlowButtonBase({
   );
 
   const handlePress = useCallback(() => {
+    if (disabled) return;
     // Haptic feedback placeholder — silently ignore on unsupported platforms (web).
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     onPress?.();
-  }, [onPress]);
+  }, [disabled, onPress]);
 
   const containerStyle: ViewStyle = isSolid
-    ? { backgroundColor: color, ...glow(color, 0.4, 18) }
+    ? { backgroundColor: color, ...(disabled ? null : glow(color, 0.4, 18)) }
     : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color };
 
   const tint = isSolid ? colors.onAccent : color;
   const textStyle: TextStyle = { color: tint };
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+    <Animated.View style={[{ transform: [{ scale }] }, disabled && styles.disabled, style]}>
       <Pressable
-        onPressIn={() => animate(0.97)}
-        onPressOut={() => animate(1)}
+        onPressIn={() => !disabled && animate(0.97)}
+        onPressOut={() => !disabled && animate(1)}
         onPress={handlePress}
+        disabled={disabled}
         style={[styles.btn, containerStyle]}
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityState={{ disabled }}
       >
         {icon ? <Ionicons name={icon} size={20} color={tint} style={styles.icon} /> : null}
         <Text style={[styles.label, textStyle]}>{label}</Text>
@@ -86,6 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
+  disabled: { opacity: 0.4 },
   icon: { marginRight: spacing.sm },
   label: {
     fontSize: font.subtitle,

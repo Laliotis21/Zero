@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { ReactNode, useCallback, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { TabBar } from './components/TabBar';
 import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -10,6 +11,7 @@ import { ResultsScreen } from './screens/ResultsScreen';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 import { useResolvedMode, useTheme } from './theme';
 import { CalcResult, ScreenKey } from './types';
+import { initCrashReporting } from './utils/crash';
 
 /** Keeps a screen mounted (state preserved) while toggling its visibility. */
 function Pane({ active, children }: { active: boolean; children: ReactNode }) {
@@ -64,10 +66,17 @@ function Gate() {
 }
 
 export default function App() {
+  // Initialise crash reporting once (no-op without a DSN).
+  useEffect(() => {
+    initCrashReporting();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <SettingsProvider>
-        <Gate />
+        <ErrorBoundary>
+          <Gate />
+        </ErrorBoundary>
       </SettingsProvider>
     </SafeAreaProvider>
   );

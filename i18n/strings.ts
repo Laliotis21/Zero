@@ -32,6 +32,8 @@ const el = {
   'home.regionValue': 'Ελλάδα',
   'home.regionHint': 'Πανελλαδικά',
   'home.calculate': 'ΥΠΟΛΟΓΙΣΜΟΣ',
+  'home.invalid': 'Συμπλήρωσε ποσό μεγαλύτερο του 0.',
+  'home.tablesSource': 'Πίνακες: {source} · ενημ. {date}',
 
   // Results
   'results.empty.title': 'Κανένας υπολογισμός ακόμη',
@@ -52,6 +54,12 @@ const el = {
   'results.paywall.price': '€2.99 · one-time',
   'results.paywall.cta': 'Upgrade',
   'results.stale': 'Υπολογίστηκε για {year}. Άλλαξες φορολογικό έτος — υπολόγισε ξανά.',
+  'results.negative.title': 'Αρνητικά καθαρά',
+  'results.negative.body':
+    'Οι κρατήσεις (ΕΦΚΑ + φόρος) ξεπερνούν τα έσοδα. Συχνά συμβαίνει όταν το τεκμαρτό εισόδημα είναι μεγαλύτερο από τα δηλωμένα έσοδα.',
+  'results.negative.presumptive':
+    'Ο φόρος υπολογίστηκε στο τεκμαρτό ελάχιστο εισόδημα, όχι στα δηλωμένα έσοδα.',
+  'results.source': 'Πίνακες: {source} · ενημ. {date}',
 
   // Budget
   'budget.empty.title': 'Δεν υπάρχει εισόδημα',
@@ -108,6 +116,11 @@ const el = {
   // Tax year note
   'year.note': 'Ίδιοι πίνακες φόρου/ΕΦΚΑ και για τα δύο έτη μέχρι να δημοσιευθεί το ΦΕΚ 2026.',
 
+  // Error boundary
+  'error.title': 'Κάτι πήγε στραβά',
+  'error.body': 'Παρουσιάστηκε απρόσμενο σφάλμα. Δοκίμασε ξανά.',
+  'error.retry': 'Δοκίμασε ξανά',
+
   // Generic
   'common.cancel': 'Άκυρο',
 } as const;
@@ -139,6 +152,8 @@ const en: Translations = {
   'home.regionValue': 'Greece',
   'home.regionHint': 'Nationwide',
   'home.calculate': 'CALCULATE',
+  'home.invalid': 'Enter an amount greater than 0.',
+  'home.tablesSource': 'Tables: {source} · upd. {date}',
 
   'results.empty.title': 'No calculation yet',
   'results.empty.body': 'Enter a salary on the home tab and press CALCULATE.',
@@ -158,6 +173,12 @@ const en: Translations = {
   'results.paywall.price': '€2.99 · one-time',
   'results.paywall.cta': 'Upgrade',
   'results.stale': 'Calculated for {year}. You changed the tax year — recalculate.',
+  'results.negative.title': 'Negative take-home',
+  'results.negative.body':
+    'Deductions (EFKA + tax) exceed revenue. This often happens when the presumptive income exceeds declared revenue.',
+  'results.negative.presumptive':
+    'Tax was computed on the presumptive minimum income, not on declared revenue.',
+  'results.source': 'Tables: {source} · upd. {date}',
 
   'budget.empty.title': 'No income',
   'budget.empty.body': 'Calculate your salary to see the budget split.',
@@ -206,6 +227,10 @@ const en: Translations = {
 
   'currency.note': 'Symbol display only — no FX conversion.',
   'year.note': 'Identical tax/EFKA tables for both years until the 2026 ΦΕΚ is published.',
+
+  'error.title': 'Something went wrong',
+  'error.body': 'An unexpected error occurred. Please try again.',
+  'error.retry': 'Try again',
 
   'common.cancel': 'Cancel',
 };

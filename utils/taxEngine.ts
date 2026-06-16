@@ -1,5 +1,5 @@
 import type { TaxYear } from '../settings/SettingsContext';
-import { CalcResult } from '../types';
+import { CalcResult, Mode } from '../types';
 
 /**
  * Greek salary/tax engine, parameterised by tax year.
@@ -15,7 +15,19 @@ interface Bracket {
   readonly rate: number;
 }
 
+/** Provenance of a year's figures — surfaced in the UI so the user knows the source. */
+interface TableMeta {
+  /** Human label for the framework version, e.g. "2024/2025". */
+  version: string;
+  /** Gazette / source reference, e.g. "ΦΕΚ 2024". */
+  source: string;
+  /** ISO date the figures were last verified (YYYY-MM-DD). */
+  asOfDate: string;
+}
+
 interface YearTables {
+  /** Provenance of this dataset. */
+  meta: TableMeta;
   /** Progressive income-tax scale (employment & pension), annual taxable €. */
   brackets: readonly Bracket[];
   /** Employee EFKA share withheld on gross. */
@@ -42,6 +54,7 @@ interface YearTables {
 }
 
 const FRAMEWORK_2024_2025: YearTables = {
+  meta: { version: '2024/2025', source: 'ΦΕΚ 2024', asOfDate: '2024-12-01' },
   brackets: [
     { upTo: 10000, rate: 0.09 },
     { upTo: 20000, rate: 0.22 },
@@ -69,6 +82,11 @@ const YEAR_TABLES: Record<TaxYear, YearTables> = {
 
 export function tablesFor(year: TaxYear): YearTables {
   return YEAR_TABLES[year] ?? FRAMEWORK_2024_2025;
+}
+
+/** Provenance of a year's figures (version/source/asOfDate) for the UI. */
+export function tableMeta(year: TaxYear): TableMeta {
+  return tablesFor(year).meta;
 }
 
 /** Freelancer EFKA classes for a given year (for UI pickers/labels). */
@@ -111,7 +129,14 @@ function taxReduction(children: number, taxable: number, table: readonly number[
   return Math.max(0, base - phaseOut);
 }
 
-const zeroResult = (year: TaxYear): CalcResult => ({ net: 0, gross: 0, efka: 0, tax: 0, year });
+const zeroResult = (year: TaxYear, mode: Mode): CalcResult => ({
+  net: 0,
+  gross: 0,
+  efka: 0,
+  tax: 0,
+  year,
+  mode,
+});
 
 /** Net monthly income for a salaried employee. */
 export function calcEmployee(
@@ -120,7 +145,7 @@ export function calcEmployee(
   triennia: number,
   year: TaxYear,
 ): CalcResult {
-  if (!(baseGrossMonthly > 0)) return zeroResult(year);
+  if (!(baseGrossMonthly > 0)) return zeroResult(year, 'employee');
   const tbl = tablesFor(year);
 
   const bump = 1 + tbl.trienniaStep * Math.min(Math.max(triennia, 0), tbl.trienniaCap);
@@ -139,7 +164,7 @@ export function calcEmployee(
   );
   const tax = annualTax / tbl.employeePayments;
 
-  return { gross, efka, tax, net: gross - efka - tax, year };
+  return { gross, efka, tax, net: gross - efka - tax, year, mode: 'employee' };
 }
 
 /** Overall cap on the presumptive minimum income (τεκμαρτό), annual €. */
@@ -167,7 +192,7 @@ export function calcFreelancer(
   yearsActive: number,
   year: TaxYear,
 ): CalcResult {
-  if (!(revenueMonthly > 0)) return zeroResult(year);
+  if (!(revenueMonthly > 0)) return zeroResult(year, 'freelancer');
   const tbl = tablesFor(year);
   const classes = tbl.freelancerClasses;
 
@@ -178,9 +203,20 @@ export function calcFreelancer(
   const annualEfka = efka * tbl.freelancerPayments;
   // Taxable profit cannot fall below the presumptive minimum (τεκμαρτό).
   const profit = Math.max(0, annualGross - annualEfka);
-  const taxable = Math.max(profit, freelancerMinIncome(tbl, yearsActive));
+  const minIncome = freelancerMinIncome(tbl, yearsActive);
+  const taxable = Math.max(profit, minIncome);
+  // Presumptive base applied = the floor bound the taxable above declared profit.
+  const presumptive = minIncome > profit;
 
   const tax = applyBrackets(taxable, tbl.brackets) / tbl.freelancerPayments;
 
-  return { gross: revenueMonthly, efka, tax, net: revenueMonthly - efka - tax, year };
+  return {
+    gross: revenueMonthly,
+    efka,
+    tax,
+    net: revenueMonthly - efka - tax,
+    year,
+    mode: 'freelancer',
+    presumptive,
+  };
 }

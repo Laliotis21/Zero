@@ -15,6 +15,13 @@ export interface CalcResult {
   tax: number;
   /** Tax year the figures were computed for (to detect stale results). */
   year: TaxYear;
+  /** Which calc path produced this (to tailor explanations). */
+  mode: Mode;
+  /**
+   * True when the freelancer presumptive minimum income (τεκμαρτό) drove the
+   * taxable base above the declared profit — explains a low/negative net.
+   */
+  presumptive?: boolean;
 }
 
 import type { Ionicons } from '@expo/vector-icons';

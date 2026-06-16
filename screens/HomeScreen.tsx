@@ -20,6 +20,7 @@ import {
   calcFreelancer,
   efkaFreelancerClasses,
   paymentsPerYear,
+  tableMeta,
 } from '../utils/taxEngine';
 import { useMoney } from '../utils/money';
 
@@ -68,8 +69,15 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
   const isFreelancer = mode === 'freelancer';
   const classFee = classes[efkaClass - 1] ?? 0;
 
+  const amount = parseAmount(gross);
+  const valid = amount > 0;
+  // Only flag an error once the user has typed something non-empty.
+  const showError = gross.trim().length > 0 && !valid;
+  const meta = useMemo(() => tableMeta(taxYear), [taxYear]);
+
   const handleCalc = useCallback(() => {
     const amount = parseAmount(gross);
+    if (!(amount > 0)) return;
     // Annual entry → monthly base (employee ÷14 incl. δώρα, freelancer ÷12).
     const monthly = period === 'year' ? amount / paymentsPerYear(taxYear, isFreelancer) : amount;
     const childCount = children === '3+' ? 3 : Number.parseInt(children, 10) || 0;
@@ -130,6 +138,7 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
           />
           <Text style={styles.euro}>{money.symbol}</Text>
         </View>
+        {showError ? <Text style={styles.error}>{tr('home.invalid')}</Text> : null}
       </View>
 
       {/* Bento 2x2 grid */}
@@ -213,7 +222,17 @@ function HomeScreenBase({ onCalculate }: HomeScreenProps) {
         </Card>
       </View>
 
-      <GlowButton label={tr('home.calculate')} icon="calculator-outline" onPress={handleCalc} style={styles.cta} />
+      <GlowButton
+        label={tr('home.calculate')}
+        icon="calculator-outline"
+        onPress={handleCalc}
+        disabled={!valid}
+        style={styles.cta}
+      />
+
+      <Text style={styles.source}>
+        {tr('home.tablesSource', { source: meta.source, date: meta.asOfDate })}
+      </Text>
     </ScrollView>
   );
 }
@@ -316,6 +335,8 @@ const makeStyles = (c: Palette) =>
     classFee: { color: c.primary, fontSize: font.small, fontWeight: weight.semibold, textAlign: 'center' },
 
     cta: { marginTop: spacing.sm },
+    error: { color: c.negative, fontSize: font.small, fontWeight: weight.medium },
+    source: { color: c.textMuted, fontSize: font.micro, textAlign: 'center' },
   });
 
 export const HomeScreen = memo(HomeScreenBase);
