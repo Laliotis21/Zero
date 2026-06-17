@@ -57,6 +57,9 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
       try {
         await fn();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+        // Clear the spinner before handing off — don't rely on the parent
+        // unmounting us (a non-unmounting onDone would leave it stuck).
+        setPending(null);
         onDone();
       } catch (err) {
         // User dismissed the provider sheet — not an error, just reset.

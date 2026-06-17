@@ -13,12 +13,6 @@
  * `Error('cancelled')` means the user dismissed the provider sheet.
  */
 
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import { GOOGLE_CONFIGURED, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from './googleConfig';
 
 export type AuthProvider = 'google' | 'apple' | 'email';
@@ -36,22 +30,30 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Lazily run GoogleSignin.configure once with the project's client IDs. */
+/**
+ * Lazily load the native Google module on first sign-in and configure it once.
+ * Deferred via dynamic import so the native module is never touched at app
+ * launch — a binary not yet rebuilt with it still boots (only a Google tap
+ * fails, gracefully). Also avoids loading it in Jest, which has no native side.
+ */
 let googleConfigured = false;
-function ensureGoogleConfigured(): void {
-  if (googleConfigured) return;
-  if (!GOOGLE_CONFIGURED) {
-    throw new Error('Google OAuth client IDs not set — edit auth/googleConfig.ts.');
+async function loadGoogle() {
+  const google = await import('@react-native-google-signin/google-signin');
+  if (!googleConfigured) {
+    if (!GOOGLE_CONFIGURED) {
+      throw new Error('Google OAuth client IDs not set — edit auth/googleConfig.ts.');
+    }
+    google.GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
+    });
+    googleConfigured = true;
   }
-  GoogleSignin.configure({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-  });
-  googleConfigured = true;
+  return google;
 }
 
 export async function signInWithGoogle(): Promise<AuthUser> {
-  ensureGoogleConfigured();
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await loadGoogle();
   try {
     await GoogleSignin.hasPlayServices(); // no-op on iOS; checks Play Services on Android.
     const response = await GoogleSignin.signIn();
