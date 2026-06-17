@@ -96,7 +96,6 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
  * a second factor over the already-persisted session, common in finance apps.
  */
 function BiometricGate({ children }: { children: ReactNode }) {
-  const c = useTheme();
   const tr = useT();
   const { settings } = useSettings();
   const lock = settings.biometricLock;

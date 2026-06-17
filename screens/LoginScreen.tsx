@@ -260,9 +260,6 @@ const makeStyles = (c: Palette) =>
       minHeight: 44,
     },
     logo: { color: c.text, fontSize: font.title, fontWeight: weight.black, letterSpacing: 1 },
-    skip: { color: c.textMuted, fontSize: font.body, fontWeight: weight.semibold },
-    guest: { alignSelf: 'center', paddingVertical: spacing.md, marginTop: spacing.xs },
-    guestText: { color: c.primary, fontSize: font.body, fontWeight: weight.semibold },
     content: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
