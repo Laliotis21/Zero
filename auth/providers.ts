@@ -1,19 +1,25 @@
 /**
  * Pluggable auth provider seam.
  *
- * These functions are the *single* place real authentication gets wired in.
- * Today they return mock identities so the whole sign-in UI flow is testable
- * with no backend and no OAuth client IDs. To go live, replace each body —
- * keep the `AuthUser` return shape and nothing else in the app has to change:
+ * Google is wired to a real native flow (@react-native-google-signin); Apple
+ * and email are still mock identities so their UI flows stay testable with no
+ * backend. To finish those, replace each body — keep the `AuthUser` return
+ * shape and nothing else in the app has to change:
  *
- *   • Google → `@react-native-google-signin/google-signin` or
- *     `expo-auth-session/providers/google` (needs an OAuth client ID).
- *   • Apple  → `expo-apple-authentication` (iOS native; returns an identity
- *     token to POST to your backend).
- *   • Email  → your own `POST /auth/login` · `POST /auth/register`.
+ *   • Apple → `expo-apple-authentication` (iOS native; identity token).
+ *   • Email → your own `POST /auth/login` · `POST /auth/register`.
  *
- * Each may throw; callers surface the error to the user.
+ * Each may throw; callers surface the error to the user. A thrown
+ * `Error('cancelled')` means the user dismissed the provider sheet.
  */
+
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import { GOOGLE_CONFIGURED, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from './googleConfig';
 
 export type AuthProvider = 'google' | 'apple' | 'email';
 
@@ -30,10 +36,39 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Lazily run GoogleSignin.configure once with the project's client IDs. */
+let googleConfigured = false;
+function ensureGoogleConfigured(): void {
+  if (googleConfigured) return;
+  if (!GOOGLE_CONFIGURED) {
+    throw new Error('Google OAuth client IDs not set — edit auth/googleConfig.ts.');
+  }
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+  });
+  googleConfigured = true;
+}
+
 export async function signInWithGoogle(): Promise<AuthUser> {
-  // TODO(auth): swap for a real Google OAuth flow + backend token exchange.
-  await delay(700);
-  return { id: 'google:demo', name: 'Google User', email: 'you@gmail.com', provider: 'google' };
+  ensureGoogleConfigured();
+  try {
+    await GoogleSignin.hasPlayServices(); // no-op on iOS; checks Play Services on Android.
+    const response = await GoogleSignin.signIn();
+    if (!isSuccessResponse(response)) throw new Error('cancelled');
+    const { user } = response.data;
+    return {
+      id: `google:${user.id}`,
+      name: user.name ?? user.email,
+      email: user.email,
+      provider: 'google',
+    };
+  } catch (err) {
+    if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
+      throw new Error('cancelled');
+    }
+    throw err;
+  }
 }
 
 export async function signInWithApple(): Promise<AuthUser> {
