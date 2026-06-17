@@ -58,8 +58,10 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
         await fn();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
         onDone();
-      } catch {
-        setError(tr('login.error.failed'));
+      } catch (err) {
+        // User dismissed the provider sheet — not an error, just reset.
+        const cancelled = err instanceof Error && err.message === 'cancelled';
+        if (!cancelled) setError(tr('login.error.failed'));
         setPending(null);
       }
     },
