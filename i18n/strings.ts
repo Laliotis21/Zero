@@ -127,6 +127,17 @@ const el = {
   'login.error.failed': 'Η σύνδεση απέτυχε. Δοκίμασε ξανά.',
   'login.legal': 'Συνεχίζοντας αποδέχεσαι τους Όρους χρήσης και την Πολιτική Απορρήτου.',
 
+  // Biometric app-lock
+  'biometric.title': 'Κλειδωμένο',
+  'biometric.body': 'Επαλήθευσε την ταυτότητά σου για να συνεχίσεις.',
+  'biometric.unlock': 'Ξεκλείδωμα',
+  'biometric.prompt': 'Ξεκλείδωσε το ZERØ',
+  'biometric.unavailable.title': 'Μη διαθέσιμο',
+  'biometric.unavailable.body': 'Δεν υπάρχει ρυθμισμένο Face ID / Touch ID σε αυτή τη συσκευή.',
+  'settings.biometric': 'Βιομετρικό κλείδωμα',
+  'common.on': 'Ενεργό',
+  'common.off': 'Ανενεργό',
+
   // Appearance options
   'appearance.system': 'Αυτόματο',
   'appearance.light': 'Φωτεινό',
@@ -287,6 +298,17 @@ const en: Translations = {
   'login.error.password': 'Password needs 6+ characters.',
   'login.error.failed': 'Sign-in failed. Try again.',
   'login.legal': 'By continuing you accept the Terms of Use and Privacy Policy.',
+
+  // Biometric app-lock
+  'biometric.title': 'Locked',
+  'biometric.body': 'Verify your identity to continue.',
+  'biometric.unlock': 'Unlock',
+  'biometric.prompt': 'Unlock ZERØ',
+  'biometric.unavailable.title': 'Unavailable',
+  'biometric.unavailable.body': 'No Face ID / Touch ID is set up on this device.',
+  'settings.biometric': 'Biometric lock',
+  'common.on': 'On',
+  'common.off': 'Off',
 
   'appearance.system': 'Automatic',
   'appearance.light': 'Light',

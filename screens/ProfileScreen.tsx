@@ -6,6 +6,7 @@ import { GlowButton } from '../components/ui/GlowButton';
 import { OptionSheet, SheetOption } from '../components/ui/OptionSheet';
 import { useT, type StringKey } from '../i18n/strings';
 import { useAuth } from '../session/AuthContext';
+import { isBiometricAvailable } from '../session/biometrics';
 import { LoginScreen } from './LoginScreen';
 import {
   Currency,
@@ -95,6 +96,20 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
     [tr],
   );
 
+  // Toggle the app-lock. Turning it on requires enrolled biometrics; otherwise
+  // we'd lock the user behind a prompt that can never succeed.
+  const toggleBiometric = useCallback(async () => {
+    if (settings.biometricLock) {
+      update({ biometricLock: false });
+      return;
+    }
+    if (!(await isBiometricAvailable())) {
+      Alert.alert(tr('biometric.unavailable.title'), tr('biometric.unavailable.body'));
+      return;
+    }
+    update({ biometricLock: true });
+  }, [settings.biometricLock, update, tr]);
+
   const appearanceValueKey: StringKey = `appearance.${settings.themeMode}` as StringKey;
   const languageValueKey: StringKey = `language.${settings.language}` as StringKey;
 
@@ -124,8 +139,22 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
         value: `${settings.currency} (${CURRENCY_SYMBOL[settings.currency]})`,
         onPress: () => setSheet('currency'),
       },
+      {
+        icon: 'finger-print-outline',
+        label: tr('settings.biometric'),
+        value: settings.biometricLock ? tr('common.on') : tr('common.off'),
+        onPress: toggleBiometric,
+      },
     ],
-    [tr, appearanceValueKey, languageValueKey, settings.taxYear, settings.currency],
+    [
+      tr,
+      appearanceValueKey,
+      languageValueKey,
+      settings.taxYear,
+      settings.currency,
+      settings.biometricLock,
+      toggleBiometric,
+    ],
   );
 
   const support: readonly RowSpec[] = useMemo(

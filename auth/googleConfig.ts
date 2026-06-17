@@ -14,3 +14,4 @@ export const GOOGLE_IOS_CLIENT_ID = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.c
 /** True only when both IDs have been replaced with real values. */
 export const GOOGLE_CONFIGURED =
   !GOOGLE_WEB_CLIENT_ID.startsWith('YOUR_') && !GOOGLE_IOS_CLIENT_ID.startsWith('YOUR_');
+  

@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { User } from '@supabase/supabase-js';
 import React, {
   createContext,
   ReactNode,
@@ -15,34 +15,34 @@ import {
   signInWithEmail,
   signInWithGoogle,
 } from '../auth/providers';
-
-const STORAGE_KEY = 'zero.auth.v1';
+import { supabase, SUPABASE_CONFIGURED } from './supabase';
 
 const PROVIDERS: readonly Provider[] = ['google', 'apple', 'email'];
 
-/** Defensive parse — never let a corrupt blob crash hydration. */
-function sanitizeUser(raw: unknown): AuthUser | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
-  if (typeof r.id !== 'string' || typeof r.name !== 'string' || typeof r.email !== 'string') {
-    return null;
-  }
-  if (!PROVIDERS.includes(r.provider as Provider)) return null;
-  return {
-    id: r.id,
-    name: r.name,
-    email: r.email,
-    provider: r.provider as Provider,
-  };
+/** Map a Supabase user onto the app's AuthUser shape. */
+function mapUser(user: User | null | undefined): AuthUser | null {
+  if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  const email = user.email ?? '';
+  const rawProvider = user.app_metadata?.provider;
+  const provider = PROVIDERS.includes(rawProvider as Provider)
+    ? (rawProvider as Provider)
+    : 'email';
+  const name =
+    (typeof meta.full_name === 'string' && meta.full_name) ||
+    (typeof meta.name === 'string' && meta.name) ||
+    email ||
+    'User';
+  return { id: user.id, name, email, provider };
 }
 
 interface AuthValue {
   user: AuthUser | null;
-  /** True until the persisted session has been read from disk. */
+  /** True until the persisted session has been read from secure storage. */
   hydrating: boolean;
   signInGoogle: () => Promise<void>;
   signInApple: () => Promise<void>;
-  /** `register` toggles login vs sign-up (same mock today). */
+  /** `register` toggles sign-up vs sign-in. */
   signInEmail: (email: string, password: string, register: boolean) => Promise<void>;
   signOut: () => void;
 }
@@ -53,48 +53,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hydrating, setHydrating] = useState(true);
 
-  // Restore a persisted session once on mount.
+  // Restore the persisted session and subscribe to all later auth changes.
+  // The listener is the single source of truth — sign-in/out anywhere flows
+  // back through here, so the sign-in helpers below don't set state directly.
   useEffect(() => {
+    if (!SUPABASE_CONFIGURED) {
+      setHydrating(false);
+      return;
+    }
     let alive = true;
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (alive && raw) setUser(sanitizeUser(JSON.parse(raw)));
-      } catch {
-        // Corrupt/unavailable storage — start signed out.
-      } finally {
-        if (alive) setHydrating(false);
-      }
-    })();
+    supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      setUser(mapUser(data.session?.user));
+      setHydrating(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(mapUser(session?.user));
+    });
     return () => {
       alive = false;
+      sub.subscription.unsubscribe();
     };
   }, []);
 
-  /** Persist + apply a freshly authenticated user. */
-  const apply = useCallback((u: AuthUser) => {
-    setUser(u);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(u)).catch(() => undefined);
-  }, []);
-
-  const signInGoogle = useCallback(async () => {
-    apply(await signInWithGoogle());
-  }, [apply]);
-
-  const signInApple = useCallback(async () => {
-    apply(await signInWithApple());
-  }, [apply]);
-
+  const signInGoogle = useCallback(() => signInWithGoogle(), []);
+  const signInApple = useCallback(() => signInWithApple(), []);
   const signInEmail = useCallback(
-    async (email: string, password: string, register: boolean) => {
-      apply(await signInWithEmail(email, password, register));
-    },
-    [apply],
+    (email: string, password: string, register: boolean) =>
+      signInWithEmail(email, password, register),
+    [],
   );
-
   const signOut = useCallback(() => {
-    setUser(null);
-    AsyncStorage.removeItem(STORAGE_KEY).catch(() => undefined);
+    supabase.auth.signOut().catch(() => undefined);
   }, []);
 
   const value = useMemo(

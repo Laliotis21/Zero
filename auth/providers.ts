@@ -1,32 +1,33 @@
 /**
- * Pluggable auth provider seam.
- *
- * Google + Apple are wired to real native flows (@react-native-google-signin,
- * expo-apple-authentication). Email is still a mock identity so its UI flow
- * stays testable with no backend. To finish it, replace the body — keep the
- * `AuthUser` return shape and nothing else in the app has to change:
- *
- *   • Email → your own `POST /auth/login` · `POST /auth/register`.
+ * Auth provider seam. Google + Apple use native sign-in
+ * (@react-native-google-signin, expo-apple-authentication) to obtain an
+ * identity token, which is then handed to Supabase (`signInWithIdToken`) for
+ * server-side verification and session issuance. Email uses Supabase
+ * password auth. On success, Supabase persists the session and AuthContext's
+ * `onAuthStateChange` listener flips the user truthy — these functions only
+ * trigger the flow and surface errors.
  *
  * Each may throw; callers surface the error to the user. A thrown
  * `Error('cancelled')` means the user dismissed the provider sheet.
  */
 
+import { supabase, SUPABASE_CONFIGURED } from '../session/supabase';
 import { GOOGLE_CONFIGURED, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from './googleConfig';
 
 export type AuthProvider = 'google' | 'apple' | 'email';
 
 export interface AuthUser {
-  /** Stable unique id (provider-namespaced). */
+  /** Stable unique id (Supabase user id). */
   id: string;
   name: string;
   email: string;
   provider: AuthProvider;
 }
 
-/** Simulated network latency so the UI exercises its real loading state. */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function requireSupabase(): void {
+  if (!SUPABASE_CONFIGURED) {
+    throw new Error('Supabase not configured — set EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY in .env.');
+  }
 }
 
 /**
@@ -43,6 +44,8 @@ async function loadGoogle() {
       throw new Error('Google OAuth client IDs not set — edit auth/googleConfig.ts.');
     }
     google.GoogleSignin.configure({
+      // webClientId sets the idToken audience Supabase verifies against; it must
+      // match the Google provider config in the Supabase dashboard.
       webClientId: GOOGLE_WEB_CLIENT_ID,
       iosClientId: GOOGLE_IOS_CLIENT_ID,
     });
@@ -51,19 +54,17 @@ async function loadGoogle() {
   return google;
 }
 
-export async function signInWithGoogle(): Promise<AuthUser> {
+export async function signInWithGoogle(): Promise<void> {
+  requireSupabase();
   const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await loadGoogle();
   try {
     await GoogleSignin.hasPlayServices(); // no-op on iOS; checks Play Services on Android.
     const response = await GoogleSignin.signIn();
     if (!isSuccessResponse(response)) throw new Error('cancelled');
-    const { user } = response.data;
-    return {
-      id: `google:${user.id}`,
-      name: user.name ?? user.email,
-      email: user.email,
-      provider: 'google',
-    };
+    const idToken = response.data.idToken;
+    if (!idToken) throw new Error('Google did not return an idToken.');
+    const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+    if (error) throw error;
   } catch (err) {
     if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
       throw new Error('cancelled');
@@ -72,7 +73,8 @@ export async function signInWithGoogle(): Promise<AuthUser> {
   }
 }
 
-export async function signInWithApple(): Promise<AuthUser> {
+export async function signInWithApple(): Promise<void> {
+  requireSupabase();
   // Lazy import for the same reason as Google: never touch the native module at
   // launch, and keep it out of Jest (which has no native side).
   const AppleAuthentication = await import('expo-apple-authentication');
@@ -88,18 +90,10 @@ export async function signInWithApple(): Promise<AuthUser> {
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
       ],
     });
-    // Apple returns name/email only on the *first* authorization; a real backend
-    // must persist them then. On re-auth they're null, so we fall back here.
-    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
-      .filter(Boolean)
-      .join(' ');
-    const email = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
-    return {
-      id: `apple:${credential.user}`,
-      name: fullName || email,
-      email,
-      provider: 'apple',
-    };
+    const idToken = credential.identityToken;
+    if (!idToken) throw new Error('Apple did not return an identityToken.');
+    const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: idToken });
+    if (error) throw error;
   } catch (err) {
     // User dismissed the Apple sheet.
     if (err instanceof Error && (err as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
@@ -110,16 +104,18 @@ export async function signInWithApple(): Promise<AuthUser> {
 }
 
 /**
- * Email/password sign-in or registration. `register` only changes which API
- * endpoint a real implementation would call; the mock treats both alike.
+ * Email/password sign-in or registration via Supabase. `register` switches
+ * `signUp` vs `signInWithPassword`. (If email confirmation is enabled in the
+ * Supabase dashboard, a fresh sign-up has no session until the link is clicked.)
  */
 export async function signInWithEmail(
   email: string,
-  _password: string,
-  _register: boolean,
-): Promise<AuthUser> {
-  // TODO(auth): replace with POST /auth/login | /auth/register.
-  await delay(700);
-  const name = email.split('@')[0] || email;
-  return { id: `email:${email.toLowerCase()}`, name, email, provider: 'email' };
+  password: string,
+  register: boolean,
+): Promise<void> {
+  requireSupabase();
+  const { error } = register
+    ? await supabase.auth.signUp({ email, password })
+    : await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
 }
