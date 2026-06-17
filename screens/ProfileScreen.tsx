@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { OptionSheet, SheetOption } from '../components/ui/OptionSheet';
 import { useT, type StringKey } from '../i18n/strings';
+import { useAuth } from '../session/AuthContext';
+import { LoginScreen } from './LoginScreen';
 import {
   Currency,
   Language,
@@ -71,10 +73,21 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
   const tr = useT();
   const money = useMoney();
   const { settings, update } = useSettings();
+  const { user, signOut } = useAuth();
   const styles = useMemo(() => makeStyles(t), [t]);
 
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
   const closeSheet = useCallback(() => setSheet(null), []);
+  const closeLogin = useCallback(() => setShowLogin(false), []);
+
+  // Confirm before dropping the session (irreversible without re-auth).
+  const confirmSignOut = useCallback(() => {
+    Alert.alert(tr('profile.signOut'), '', [
+      { text: tr('common.cancel'), style: 'cancel' },
+      { text: tr('profile.signOut'), style: 'destructive', onPress: signOut },
+    ]);
+  }, [tr, signOut]);
   // Sign-in, Pro purchase and legal/rate links have no backend/links yet —
   // give honest feedback instead of a dead tap.
   const comingSoon = useCallback(
@@ -168,15 +181,29 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
         {/* Identity */}
         <Card style={styles.identity}>
           <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={30} color={t.primary} />
+            <Ionicons name={user ? 'person' : 'person-outline'} size={30} color={t.primary} />
           </View>
           <View style={styles.identityText}>
-            <Text style={styles.name}>{tr('profile.guest')}</Text>
-            <Text style={styles.sub}>{tr('profile.guestSub')}</Text>
+            <Text style={styles.name}>{user ? user.name : tr('profile.guest')}</Text>
+            <Text style={styles.sub}>{user ? user.email : tr('profile.guestSub')}</Text>
           </View>
         </Card>
 
-        <GlowButton label={tr('profile.signIn')} icon="log-in-outline" onPress={comingSoon} />
+        {user ? (
+          <GlowButton
+            label={tr('profile.signOut')}
+            icon="log-out-outline"
+            variant="outline"
+            color={t.textMuted}
+            onPress={confirmSignOut}
+          />
+        ) : (
+          <GlowButton
+            label={tr('profile.signIn')}
+            icon="log-in-outline"
+            onPress={() => setShowLogin(true)}
+          />
+        )}
 
         {/* Premium */}
         <Card style={styles.premium}>
@@ -251,6 +278,15 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
         onClose={closeSheet}
         note={tr('currency.note')}
       />
+
+      <Modal
+        visible={showLogin}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={closeLogin}
+      >
+        <LoginScreen onClose={closeLogin} />
+      </Modal>
     </>
   );
 }
