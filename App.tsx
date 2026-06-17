@@ -9,6 +9,7 @@ import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
+import { AuthProvider, useAuth } from './session/AuthContext';
 import { SessionProvider, useSession } from './session/SessionContext';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 import { useResolvedMode, useTheme } from './theme';
@@ -65,9 +66,10 @@ function Gate() {
   const c = useTheme();
   const { hydrating } = useSettings();
   const { hydrating: sessionHydrating } = useSession();
+  const { hydrating: authHydrating } = useAuth();
   const { onboarded, complete } = useOnboarding();
 
-  if (hydrating || sessionHydrating || onboarded === null) {
+  if (hydrating || sessionHydrating || authHydrating || onboarded === null) {
     return <View style={{ flex: 1, backgroundColor: c.bg }} />;
   }
   if (!onboarded) return <Onboarding onDone={complete} />;
@@ -84,9 +86,11 @@ export default function App() {
     <SafeAreaProvider>
       <SettingsProvider>
         <SessionProvider>
-          <ErrorBoundary>
-            <Gate />
-          </ErrorBoundary>
+          <AuthProvider>
+            <ErrorBoundary>
+              <Gate />
+            </ErrorBoundary>
+          </AuthProvider>
         </SessionProvider>
       </SettingsProvider>
     </SafeAreaProvider>
