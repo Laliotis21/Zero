@@ -7,9 +7,11 @@ import { Onboarding, useOnboarding } from './components/Onboarding';
 import { TabBar } from './components/TabBar';
 import { BudgetScreen } from './screens/BudgetScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { LoginScreen } from './screens/LoginScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { AuthProvider, useAuth } from './session/AuthContext';
+import { useAuthGate } from './session/authGate';
 import { SessionProvider, useSession } from './session/SessionContext';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 import { useResolvedMode, useTheme } from './theme';
@@ -66,13 +68,23 @@ function Gate() {
   const c = useTheme();
   const { hydrating } = useSettings();
   const { hydrating: sessionHydrating } = useSession();
-  const { hydrating: authHydrating } = useAuth();
+  const { hydrating: authHydrating, user } = useAuth();
   const { onboarded, complete } = useOnboarding();
+  const { skipped, skip } = useAuthGate();
 
-  if (hydrating || sessionHydrating || authHydrating || onboarded === null) {
+  if (
+    hydrating ||
+    sessionHydrating ||
+    authHydrating ||
+    onboarded === null ||
+    skipped === null
+  ) {
     return <View style={{ flex: 1, backgroundColor: c.bg }} />;
   }
   if (!onboarded) return <Onboarding onDone={complete} />;
+  // Launch login gate: shown until the user signs in or skips (guest). On
+  // sign-in `user` flips truthy and this falls through to the app.
+  if (!user && !skipped) return <LoginScreen onDone={() => undefined} onSkip={skip} />;
   return <AppInner />;
 }
 
