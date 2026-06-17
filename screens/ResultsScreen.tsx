@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
@@ -15,7 +15,6 @@ import { tableMeta } from '../utils/taxEngine';
 
 interface ResultsScreenProps {
   result: CalcResult | null;
-  onUpgrade: () => void;
 }
 
 interface DeductionRowProps {
@@ -44,13 +43,18 @@ const DeductionRow = memo(function DeductionRow({ icon, labelKey, amount }: Dedu
   );
 });
 
-function ResultsScreenBase({ result, onUpgrade }: ResultsScreenProps) {
+function ResultsScreenBase({ result }: ResultsScreenProps) {
   const t = useTheme();
   const tr = useT();
   const money = useMoney();
   const { settings } = useSettings();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const handleUpgrade = useCallback(() => onUpgrade(), [onUpgrade]);
+  // AI Reverse Pricing is a paid feature with no purchase flow yet — don't
+  // silently route to a free screen; tell the user it's coming.
+  const handleUpgrade = useCallback(
+    () => Alert.alert(tr('common.soon.title'), tr('common.soon.body')),
+    [tr],
+  );
 
   const view = useMemo(() => {
     if (!result || result.net <= 0) return null;

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { OptionSheet, SheetOption } from '../components/ui/OptionSheet';
@@ -20,8 +20,6 @@ import { useMoney } from '../utils/money';
 interface ProfileScreenProps {
   /** Net monthly income from the latest calculation, if any. */
   net: number;
-  /** Jump to the premium / budget upsell. */
-  onUpgrade: () => void;
 }
 
 type SheetKind = 'appearance' | 'language' | 'taxYear' | 'currency';
@@ -68,7 +66,7 @@ const RowGroup = memo(function RowGroup({ rows, styles, iconColor, muted }: RowG
   );
 });
 
-function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
+function ProfileScreenBase({ net }: ProfileScreenProps) {
   const t = useTheme();
   const tr = useT();
   const money = useMoney();
@@ -77,7 +75,12 @@ function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
 
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
-  const noop = useCallback(() => undefined, []);
+  // Sign-in, Pro purchase and legal/rate links have no backend/links yet —
+  // give honest feedback instead of a dead tap.
+  const comingSoon = useCallback(
+    () => Alert.alert(tr('common.soon.title'), tr('common.soon.body')),
+    [tr],
+  );
 
   const appearanceValueKey: StringKey = `appearance.${settings.themeMode}` as StringKey;
   const languageValueKey: StringKey = `language.${settings.language}` as StringKey;
@@ -114,11 +117,11 @@ function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
 
   const support: readonly RowSpec[] = useMemo(
     () => [
-      { icon: 'document-text-outline', label: tr('profile.row.terms'), onPress: noop },
-      { icon: 'shield-checkmark-outline', label: tr('profile.row.privacy'), onPress: noop },
-      { icon: 'star-outline', label: tr('profile.row.rate'), onPress: noop },
+      { icon: 'document-text-outline', label: tr('profile.row.terms'), onPress: comingSoon },
+      { icon: 'shield-checkmark-outline', label: tr('profile.row.privacy'), onPress: comingSoon },
+      { icon: 'star-outline', label: tr('profile.row.rate'), onPress: comingSoon },
     ],
-    [tr, noop],
+    [tr, comingSoon],
   );
 
   // Sheet option lists.
@@ -173,7 +176,7 @@ function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
           </View>
         </Card>
 
-        <GlowButton label={tr('profile.signIn')} icon="log-in-outline" onPress={noop} />
+        <GlowButton label={tr('profile.signIn')} icon="log-in-outline" onPress={comingSoon} />
 
         {/* Premium */}
         <Card style={styles.premium}>
@@ -189,7 +192,7 @@ function ProfileScreenBase({ net, onUpgrade }: ProfileScreenProps) {
           <GlowButton
             label={tr('profile.proCta')}
             icon="arrow-up-circle-outline"
-            onPress={onUpgrade}
+            onPress={comingSoon}
             style={styles.premiumCta}
           />
         </Card>

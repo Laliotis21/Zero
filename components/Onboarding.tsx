@@ -82,6 +82,14 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     scroller.current?.scrollTo({ x: width * (index + 1), animated: true });
   }, [last, index, width, onDone]);
 
+  // Skip jumps to the last slide — it must NOT bypass the disclaimer gate.
+  const skipToEnd = useCallback(() => {
+    Haptics.selectionAsync().catch(() => undefined);
+    const target = SLIDES.length - 1;
+    setIndex(target);
+    scroller.current?.scrollTo({ x: width * target, animated: true });
+  }, [width]);
+
   const toggleAccept = useCallback(() => {
     Haptics.selectionAsync().catch(() => undefined);
     setAccepted((a) => !a);
@@ -94,7 +102,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       <View style={styles.topBar}>
         <Text style={styles.logo}>ZERØ</Text>
         {!last ? (
-          <TouchableOpacity onPress={onDone} accessibilityRole="button" accessibilityLabel={tr('onboarding.skip')}>
+          <TouchableOpacity onPress={skipToEnd} accessibilityRole="button" accessibilityLabel={tr('onboarding.skip')}>
             <Text style={styles.skip}>{tr('onboarding.skip')}</Text>
           </TouchableOpacity>
         ) : (
