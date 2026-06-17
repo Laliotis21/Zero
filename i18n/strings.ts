@@ -138,6 +138,10 @@ const el = {
 
   // Generic
   'common.cancel': 'Άκυρο',
+  'common.soon.title': 'Σύντομα διαθέσιμο',
+  'common.soon.body': 'Αυτή η λειτουργία ετοιμάζεται.',
+  'budget.saved.title': 'Αποθηκεύτηκε',
+  'budget.saved.body': 'Το budget αποθηκεύτηκε στη συσκευή.',
 } as const;
 
 export type StringKey = keyof typeof el;
@@ -262,6 +266,10 @@ const en: Translations = {
   'onboarding.accept': 'I understand and accept',
 
   'common.cancel': 'Cancel',
+  'common.soon.title': 'Coming soon',
+  'common.soon.body': 'This feature is on the way.',
+  'budget.saved.title': 'Saved',
+  'budget.saved.body': 'Your budget has been saved to this device.',
 };
 
 const tables = { el, en } as const;

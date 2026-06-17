@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { memo, useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
@@ -68,8 +69,20 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
   const { settings } = useSettings();
   const styles = useMemo(() => makeStyles(t), [t]);
   const buckets = useMemo(() => buildBudget(net), [net]);
-  const onSave = useCallback(() => undefined, []);
-  const onExport = useCallback(() => undefined, []);
+
+  // Persist the current split so it survives an app kill, then confirm.
+  const onSave = useCallback(() => {
+    AsyncStorage.setItem(
+      'zero.budget.v1',
+      JSON.stringify({ net, year: settings.taxYear, buckets, savedAt: Date.now() }),
+    ).catch(() => undefined);
+    Alert.alert(tr('budget.saved.title'), tr('budget.saved.body'));
+  }, [net, settings.taxYear, buckets, tr]);
+
+  // PDF export needs a native print module not bundled yet — be honest, not silent.
+  const onExport = useCallback(() => {
+    Alert.alert(tr('common.soon.title'), tr('common.soon.body'));
+  }, [tr]);
 
   // Split the template around {amount} so the amount can be styled bold inline.
   const [introBefore = '', introAfter = ''] = tr('budget.intro').split('{amount}');

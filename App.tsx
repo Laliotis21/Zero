@@ -35,8 +35,6 @@ function AppInner() {
     },
     [setResult],
   );
-  const goBudget = useCallback(() => setScreen('budget'), []);
-
   const net = result?.net ?? 0;
 
   return (
@@ -48,13 +46,13 @@ function AppInner() {
           <HomeScreen onCalculate={handleCalculate} />
         </Pane>
         <Pane active={screen === 'results'}>
-          <ResultsScreen result={result} onUpgrade={goBudget} />
+          <ResultsScreen result={result} />
         </Pane>
         <Pane active={screen === 'budget'}>
           <BudgetScreen net={net} />
         </Pane>
         <Pane active={screen === 'profile'}>
-          <ProfileScreen net={net} onUpgrade={goBudget} />
+          <ProfileScreen net={net} />
         </Pane>
       </View>
       <TabBar active={screen} onChange={setScreen} />
