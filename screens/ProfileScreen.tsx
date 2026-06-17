@@ -285,7 +285,7 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
         presentationStyle="fullScreen"
         onRequestClose={closeLogin}
       >
-        <LoginScreen onClose={closeLogin} />
+        <LoginScreen onDone={closeLogin} />
       </Modal>
     </>
   );
