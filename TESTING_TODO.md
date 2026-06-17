@@ -11,10 +11,10 @@ Audit 2026-06-16. Updated 2026-06-17. Health: jest 19/19 pass, `tsc --noEmit` cl
 - [x] Budget "Save" persists split to AsyncStorage (`zero.budget.v1`) + confirm Alert. "Export PDF" → "coming soon" Alert (needs native print module). `screens/BudgetScreen.tsx`
 - [x] Profile "Sign in" / "Terms" / "Privacy" / "Rate" → "coming soon" Alert (need backend / URLs). `screens/ProfileScreen.tsx`
 
-## Correctness / UX (LOW) — OPEN
-- [ ] Currency = symbol swap only, no FX conversion. USD/GBP show euro amounts with $/£. Note exists but misleading in Results/Budget. `utils/money.ts`, `utils/format.ts`
-- [ ] `sanitizeForm` does not clamp hydrated `years/activeYears/efkaClass`. Corrupt/old blob (e.g. `efkaClass=99`) → class card shows fee `0 €` (`classes[98] ?? 0`) until stepper touched. Calc itself clamps. `session/SessionContext.tsx`
-- [ ] `budget.tag` label says "τιμαριθμικά / inflation-adjusted" but `buildBudget` does no inflation adjustment — plain 50/30/20. Misleading. `i18n/strings.ts`, `utils/budget.ts`
+## Correctness / UX (LOW) — FIXED
+- [x] FX conversion added. `CURRENCY_RATE` (static EUR-based) + `convertFromEur` in `utils/format.ts`; `useMoney` applies the active rate to `format`/`split`; ResultsScreen hero uses `money.split` (was raw `splitEuro`). `currency.note` now says "fixed approximate rate — not live FX". Tests added. `utils/money.ts`, `utils/format.ts`
+- [x] `sanitizeForm` clamps hydrated ints via `clampInt`: years 0–9, activeYears 0–40, efkaClass 1–6 (mirrors steppers + class table). Corrupt blob no longer yields empty fee card. `session/SessionContext.tsx`
+- [x] `budget.tag` no longer claims "inflation-adjusted" (false) — now "{year} · 50/30/20", matching `buildBudget`. `i18n/strings.ts`
 
 ## A11y (minor) — OPEN
 - [ ] `OptionSheet` options use role `button` not `radio`. `components/ui/OptionSheet.tsx`

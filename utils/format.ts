@@ -7,6 +7,22 @@ export const CURRENCY_SYMBOL: Record<Currency, string> = {
 };
 
 /**
+ * Static EUR-based FX rates. Every figure is computed in euro (Greek tax);
+ * these convert the *displayed* amount when the user picks USD/GBP. Rates are
+ * approximate and maintained by hand — the app has no live FX feed offline.
+ */
+export const CURRENCY_RATE: Record<Currency, number> = {
+  EUR: 1,
+  USD: 1.08,
+  GBP: 0.85,
+};
+
+/** Convert a euro amount into the target currency via the static rate. */
+export function convertFromEur(eur: number, currency: Currency): number {
+  return eur * CURRENCY_RATE[currency];
+}
+
+/**
  * Greek-locale number body: 1642.5 -> "1.642,50" (dot thousands, comma decimal).
  * Pure, dependency-free (Intl locale data is unreliable on some RN/Hermes builds).
  */
@@ -20,7 +36,8 @@ function formatBody(value: number): string {
 
 /**
  * Money formatter. Symbol trails the number (Greek convention) for every
- * currency — the currency setting swaps the symbol only, with no FX conversion.
+ * currency. The `value` is expected already in the target currency — convert
+ * euro inputs with `convertFromEur` first (the `useMoney` hook does this).
  */
 export function formatMoney(value: number, currency: Currency = 'EUR', withSymbol = true): string {
   const body = formatBody(value);

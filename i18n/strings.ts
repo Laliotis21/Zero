@@ -66,7 +66,7 @@ const el = {
   'budget.empty.body': 'Υπολόγισε τον μισθό σου για να δεις το budget split.',
   'budget.title': 'Smart Budget Splitter',
   'budget.intro': 'Διαχωρισμός {amount} με αλγόριθμο 50/30/20',
-  'budget.tag': '{year} inflation-adjusted',
+  'budget.tag': '{year} · 50/30/20',
   'budget.save': 'Αποθήκευση',
   'budget.export': 'Εξαγωγή PDF',
   'budget.needs': 'ΑΝΑΓΚΕΣ',
@@ -111,7 +111,7 @@ const el = {
   'language.en': 'English',
 
   // Currency note
-  'currency.note': 'Μόνο εμφάνιση συμβόλου — χωρίς μετατροπή ισοτιμίας.',
+  'currency.note': 'Μετατροπή με σταθερή, κατά προσέγγιση ισοτιμία — όχι ζωντανή τιμή.',
 
   // Tax year note
   'year.note': 'Ίδιοι πίνακες φόρου/ΕΦΚΑ και για τα δύο έτη μέχρι να δημοσιευθεί το ΦΕΚ 2026.',
@@ -203,7 +203,7 @@ const en: Translations = {
   'budget.empty.body': 'Calculate your salary to see the budget split.',
   'budget.title': 'Smart Budget Splitter',
   'budget.intro': 'Splitting {amount} with the 50/30/20 rule',
-  'budget.tag': '{year} inflation-adjusted',
+  'budget.tag': '{year} · 50/30/20',
   'budget.save': 'Save',
   'budget.export': 'Export PDF',
   'budget.needs': 'NEEDS',
@@ -244,7 +244,7 @@ const en: Translations = {
   'language.el': 'Ελληνικά',
   'language.en': 'English',
 
-  'currency.note': 'Symbol display only — no FX conversion.',
+  'currency.note': 'Converted at a fixed, approximate rate — not live FX.',
   'year.note': 'Identical tax/EFKA tables for both years until the 2026 ΦΕΚ is published.',
 
   'error.title': 'Something went wrong',
