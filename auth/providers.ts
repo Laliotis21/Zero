@@ -1,12 +1,11 @@
 /**
  * Pluggable auth provider seam.
  *
- * Google is wired to a real native flow (@react-native-google-signin); Apple
- * and email are still mock identities so their UI flows stay testable with no
- * backend. To finish those, replace each body — keep the `AuthUser` return
- * shape and nothing else in the app has to change:
+ * Google + Apple are wired to real native flows (@react-native-google-signin,
+ * expo-apple-authentication). Email is still a mock identity so its UI flow
+ * stays testable with no backend. To finish it, replace the body — keep the
+ * `AuthUser` return shape and nothing else in the app has to change:
  *
- *   • Apple → `expo-apple-authentication` (iOS native; identity token).
  *   • Email → your own `POST /auth/login` · `POST /auth/register`.
  *
  * Each may throw; callers surface the error to the user. A thrown
@@ -74,11 +73,40 @@ export async function signInWithGoogle(): Promise<AuthUser> {
 }
 
 export async function signInWithApple(): Promise<AuthUser> {
-  // TODO(auth): swap for expo-apple-authentication + backend token exchange.
-  // Apple only returns name/email on the *first* authorization, so a real
-  // implementation must persist them server-side on first sign-in.
-  await delay(700);
-  return { id: 'apple:demo', name: 'Apple User', email: 'you@icloud.com', provider: 'apple' };
+  // Lazy import for the same reason as Google: never touch the native module at
+  // launch, and keep it out of Jest (which has no native side).
+  const AppleAuthentication = await import('expo-apple-authentication');
+  // Apple Sign In is iOS-only (and needs the entitlement); fail gracefully
+  // anywhere it isn't available rather than crashing.
+  if (!(await AppleAuthentication.isAvailableAsync())) {
+    throw new Error('Apple sign-in is not available on this device.');
+  }
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+    // Apple returns name/email only on the *first* authorization; a real backend
+    // must persist them then. On re-auth they're null, so we fall back here.
+    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+      .filter(Boolean)
+      .join(' ');
+    const email = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
+    return {
+      id: `apple:${credential.user}`,
+      name: fullName || email,
+      email,
+      provider: 'apple',
+    };
+  } catch (err) {
+    // User dismissed the Apple sheet.
+    if (err instanceof Error && (err as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+      throw new Error('cancelled');
+    }
+    throw err;
+  }
 }
 
 /**
