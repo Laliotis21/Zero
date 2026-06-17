@@ -39,6 +39,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withModularHeaders",
       "expo-font",
       "expo-apple-authentication",
       "@sentry/react-native",
