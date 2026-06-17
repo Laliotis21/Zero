@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useRef } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   StyleSheet,
@@ -20,6 +21,8 @@ interface GlowButtonProps {
   icon?: IconName;
   /** Outline (ghost) instead of filled accent. */
   variant?: 'solid' | 'outline';
+  /** Shows a spinner (in place of the label) and blocks taps while async work runs. */
+  loading?: boolean;
   /** Non-interactive + dimmed (e.g. invalid form). */
   disabled?: boolean;
   style?: ViewStyle;
@@ -32,11 +35,14 @@ function GlowButtonBase({
   color = colors.primary,
   icon,
   variant = 'solid',
+  loading = false,
   disabled = false,
   style,
 }: GlowButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const isSolid = variant === 'solid';
+  // A spinner in flight is also non-interactive — fold it into `disabled`.
+  const blocked = disabled || loading;
 
   const animate = useCallback(
     (to: number) => {
@@ -51,33 +57,39 @@ function GlowButtonBase({
   );
 
   const handlePress = useCallback(() => {
-    if (disabled) return;
+    if (blocked) return;
     // Haptic feedback placeholder — silently ignore on unsupported platforms (web).
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     onPress?.();
-  }, [disabled, onPress]);
+  }, [blocked, onPress]);
 
   const containerStyle: ViewStyle = isSolid
-    ? { backgroundColor: color, ...(disabled ? null : glow(color, 0.4, 18)) }
+    ? { backgroundColor: color, ...(blocked ? null : glow(color, 0.4, 18)) }
     : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color };
 
   const tint = isSolid ? colors.onAccent : color;
   const textStyle: TextStyle = { color: tint };
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, disabled && styles.disabled, style]}>
+    <Animated.View style={[{ transform: [{ scale }] }, blocked && styles.disabled, style]}>
       <Pressable
-        onPressIn={() => !disabled && animate(0.97)}
-        onPressOut={() => !disabled && animate(1)}
+        onPressIn={() => !blocked && animate(0.97)}
+        onPressOut={() => !blocked && animate(1)}
         onPress={handlePress}
-        disabled={disabled}
+        disabled={blocked}
         style={[styles.btn, containerStyle]}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled: blocked, busy: loading }}
       >
-        {icon ? <Ionicons name={icon} size={20} color={tint} style={styles.icon} /> : null}
-        <Text style={[styles.label, textStyle]}>{label}</Text>
+        {loading ? (
+          <ActivityIndicator color={tint} />
+        ) : (
+          <>
+            {icon ? <Ionicons name={icon} size={20} color={tint} style={styles.icon} /> : null}
+            <Text style={[styles.label, textStyle]}>{label}</Text>
+          </>
+        )}
       </Pressable>
     </Animated.View>
   );

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -43,10 +43,13 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
 
   const busy = pending !== null;
+  // Lets the email field's "next" key jump straight to the password field.
+  const passwordRef = useRef<TextInput>(null);
 
   /** Run a provider sign-in; close on success, surface a message on failure. */
   const run = useCallback(
@@ -57,6 +60,9 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
       try {
         await fn();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+        // Clear the spinner before handing off — don't rely on the parent
+        // unmounting us (a non-unmounting onDone would leave it stuck).
+        setPending(null);
         onDone();
       } catch (err) {
         // User dismissed the provider sheet — not an error, just reset.
@@ -156,37 +162,65 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
               onChangeText={setEmail}
               placeholder={tr('login.emailPlaceholder')}
               placeholderTextColor={c.textMuted}
+              accessibilityLabel={tr('login.email')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
+              textContentType="emailAddress"
               editable={!busy}
               returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>{tr('login.password')}</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={tr('login.passwordPlaceholder')}
-              placeholderTextColor={c.textMuted}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete={register ? 'new-password' : 'current-password'}
-              editable={!busy}
-              returnKeyType="go"
-              onSubmitEditing={submitEmail}
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                ref={passwordRef}
+                style={[styles.input, styles.passwordInput]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={tr('login.passwordPlaceholder')}
+                placeholderTextColor={c.textMuted}
+                accessibilityLabel={tr('login.password')}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete={register ? 'new-password' : 'current-password'}
+                textContentType={register ? 'newPassword' : 'password'}
+                editable={!busy}
+                returnKeyType="go"
+                onSubmitEditing={submitEmail}
+              />
+              <Pressable
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={8}
+                style={styles.eye}
+                accessibilityRole="button"
+                accessibilityState={{ selected: showPassword }}
+                accessibilityLabel={tr(showPassword ? 'login.hidePassword' : 'login.showPassword')}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={22}
+                  color={c.textMuted}
+                />
+              </Pressable>
+            </View>
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
+              {error}
+            </Text>
+          ) : null}
 
           <GlowButton
             label={tr(register ? 'login.submit.signUp' : 'login.submit.signIn')}
             onPress={submitEmail}
-            disabled={busy}
+            loading={pending === 'email'}
+            disabled={busy && pending !== 'email'}
             style={styles.submit}
           />
 
@@ -301,6 +335,17 @@ const makeStyles = (c: Palette) =>
       paddingHorizontal: spacing.lg,
       color: c.text,
       fontSize: font.subtitle,
+    },
+    passwordRow: { justifyContent: 'center' },
+    // Reserve room so masked text never slides under the reveal toggle.
+    passwordInput: { paddingRight: 52 },
+    eye: {
+      position: 'absolute',
+      right: spacing.sm,
+      height: 44,
+      width: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     error: { color: c.negative, fontSize: font.small, marginLeft: spacing.xs },
     submit: { alignSelf: 'stretch', marginTop: spacing.xs },
