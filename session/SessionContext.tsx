@@ -42,18 +42,27 @@ interface PersistShape {
 
 const MODES: readonly Mode[] = ['employee', 'freelancer'];
 
+/** Clamp a hydrated integer to the same bounds the steppers enforce. */
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  if (!Number.isFinite(v)) return fallback;
+  return Math.min(Math.max(Math.trunc(v as number), min), max);
+}
+
 /** Defensive parse — never let a corrupt blob crash hydration. */
 function sanitizeForm(raw: unknown): HomeForm {
   if (!raw || typeof raw !== 'object') return DEFAULT_FORM;
   const r = raw as Record<string, unknown>;
+  // Bounds mirror the HomeScreen steppers (years 0–9, activeYears 0–40) and the
+  // freelancer EFKA class table (1–6) so a stale/corrupt blob can't drive an
+  // out-of-range index (e.g. efkaClass=99 -> empty fee card until touched).
   return {
     mode: MODES.includes(r.mode as Mode) ? (r.mode as Mode) : DEFAULT_FORM.mode,
     period: r.period === 'year' ? 'year' : 'month',
     gross: typeof r.gross === 'string' ? r.gross : '',
     children: typeof r.children === 'string' ? r.children : '0',
-    years: Number.isFinite(r.years) ? (r.years as number) : 0,
-    activeYears: Number.isFinite(r.activeYears) ? (r.activeYears as number) : 0,
-    efkaClass: Number.isFinite(r.efkaClass) ? (r.efkaClass as number) : 1,
+    years: clampInt(r.years, 0, 9, 0),
+    activeYears: clampInt(r.activeYears, 0, 40, 0),
+    efkaClass: clampInt(r.efkaClass, 1, 6, 1),
   };
 }
 

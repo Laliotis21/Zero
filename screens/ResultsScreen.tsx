@@ -9,7 +9,6 @@ import { useT, type StringKey } from '../i18n/strings';
 import { useSettings } from '../settings/SettingsContext';
 import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, IconName } from '../types';
-import { splitEuro } from '../utils/format';
 import { useMoney } from '../utils/money';
 import { tableMeta } from '../utils/taxEngine';
 
@@ -61,13 +60,13 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
     const { net, efka, tax } = result;
     const total = net + efka + tax;
     return {
-      hero: splitEuro(net),
+      hero: money.split(net),
       efka,
       tax,
       totalDed: efka + tax,
       ratio: total > 0 ? net / total : 0,
     };
-  }, [result]);
+  }, [result, money]);
 
   // No calculation yet.
   if (!result) {

@@ -1,4 +1,11 @@
-import { formatAmountInput, formatMoney, groupDigits, splitEuro } from '../utils/format';
+import {
+  convertFromEur,
+  CURRENCY_RATE,
+  formatAmountInput,
+  formatMoney,
+  groupDigits,
+  splitEuro,
+} from '../utils/format';
 
 describe('groupDigits', () => {
   it('inserts dot thousands separators', () => {
@@ -28,5 +35,16 @@ describe('formatAmountInput (live input grouping)', () => {
   it('round-trips with formatMoney via the Greek convention', () => {
     expect(formatMoney(1234500, 'EUR')).toBe('1.234.500,00 €');
     expect(splitEuro(1642.5)).toEqual({ whole: '1.642', cents: '50' });
+  });
+});
+
+describe('convertFromEur (static FX)', () => {
+  it('is identity for EUR', () => {
+    expect(convertFromEur(1000, 'EUR')).toBe(1000);
+  });
+
+  it('applies the static rate for USD/GBP', () => {
+    expect(convertFromEur(1000, 'USD')).toBeCloseTo(1000 * CURRENCY_RATE.USD, 5);
+    expect(convertFromEur(1000, 'GBP')).toBeCloseTo(1000 * CURRENCY_RATE.GBP, 5);
   });
 });
