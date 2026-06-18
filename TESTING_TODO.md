@@ -23,17 +23,17 @@ P0 (block App Store submission):
 - [ ] Google iOS OAuth client re-created for new bundle; update `iosUrlScheme` (`app.json`) + Supabase Authorized Client IDs. Sign-in breaks until done.
 - [ ] Host legal pages `https://zerofinance.app/terms` + `/privacy` (links wired, pages missing).
 - [ ] Pro paywall still stub — "Get Pro" → `comingSoon` Alert (`ProfileScreen.tsx:260`), Results "Upgrade" + AI Reverse Pricing no purchase flow. Decide: implement IAP (RevenueCat/StoreKit) **or** hide paywall for v1.
-- [ ] `EXPO_PUBLIC_SENTRY_DSN` absent from `.env` → no crash reporting in prod (`utils/crash.ts:12`).
+- [~] `EXPO_PUBLIC_SENTRY_DSN` documented in `.env.example`; `utils/crash.ts` already wired. **Action left: paste real DSN into `.env`** (Sentry → Project → Client Keys (DSN)) — until then prod has no crash reporting.
 - [ ] App Store Connect privacy/data-collection disclosure (email auth collects PII).
 - [ ] Supabase OAuth callback on default `*.supabase.co` → redirect_uri_mismatch risk; custom domain before prod (memory `google-oauth-prod-domain`).
 
 P1:
 - [x] Profile Rate link wired (PR #6, StoreReview).
-- [ ] `npm install` to pull `expo-store-review` (~9.0.9) — typecheck fails on `utils/links.ts` until installed.
+- [x] `expo-store-review` installed (`npm install`) — typecheck clean, 21/21 tests pass.
 
-## A11y (minor) — OPEN
-- [ ] `OptionSheet` options use role `button` not `radio`. `components/ui/OptionSheet.tsx`
-- [ ] `TabBar` tabs lack `tablist` container role. `components/TabBar.tsx`
+## A11y (minor) — FIXED
+- [x] `OptionSheet` options now role `radio` inside a `radiogroup` container, `accessibilityState.selected` set. `components/ui/OptionSheet.tsx`
+- [x] `TabBar` container now has `tablist` role (tabs already `tab`). `components/TabBar.tsx`
 
 ## Not a bug (confirmed correct)
 - Freelancer high years + low revenue → negative net (e.g. rev=500/yrs=40 → −105.67€). Handled by Results "Αρνητικά καθαρά / τεκμαρτό" state. Correct τεκμαρτό domain behavior.

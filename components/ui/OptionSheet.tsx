@@ -42,6 +42,7 @@ export function OptionSheet<T extends string | number>({
         <View style={styles.handle} />
         <Text style={styles.title}>{title}</Text>
 
+        <View accessibilityRole="radiogroup">
         {options.map((opt) => {
           const active = opt.value === selected;
           return (
@@ -52,7 +53,7 @@ export function OptionSheet<T extends string | number>({
                 onSelect(opt.value);
                 onClose();
               }}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityState={{ selected: active }}
             >
               <View style={styles.optionText}>
@@ -69,6 +70,7 @@ export function OptionSheet<T extends string | number>({
             </Pressable>
           );
         })}
+        </View>
 
         {note ? <Text style={styles.note}>{note}</Text> : null}
       </View>

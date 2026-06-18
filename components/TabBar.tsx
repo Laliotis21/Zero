@@ -32,7 +32,10 @@ function TabBarBase({ active, onChange }: TabBarProps) {
   const handle = useCallback((k: ScreenKey) => () => onChange(k), [onChange]);
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+    <View
+      accessibilityRole="tablist"
+      style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
+    >
       {TABS.map((tab) => {
         const isActive = tab.key === active;
         return (
