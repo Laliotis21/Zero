@@ -24,7 +24,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.zero.app",
+      "bundleIdentifier": "app.zerofinance.mobile",
       "usesAppleSignIn": true
     },
     "android": {

@@ -14,7 +14,7 @@ Create **two** clients:
 | Type | Field | Value |
 |------|-------|-------|
 | **Web application** | — | gives **Web client ID** |
-| **iOS** | Bundle ID | `com.zero.app` → gives **iOS client ID** |
+| **iOS** | Bundle ID | `app.zerofinance.mobile` → gives **iOS client ID** |
 
 (Android later: needs the SHA-1 of your EAS signing key — `eas credentials`.)
 

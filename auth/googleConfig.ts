@@ -4,7 +4,7 @@
  *
  *   • Web client ID  → audience for the idToken (required for verification,
  *     used on every platform). Sign-in cannot work without it.
- *   • iOS client ID  → the iOS OAuth client for bundle com.zero.app. Optional:
+ *   • iOS client ID  → the iOS OAuth client for bundle app.zerofinance.mobile. Optional:
  *     Android matches by package + SHA-1 (no id in code) and needs only the web
  *     client id, so iOS may stay a placeholder until we ship iOS.
  *
