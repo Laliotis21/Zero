@@ -78,6 +78,10 @@ export async function signInWithGoogle(): Promise<void> {
 
 export async function signInWithApple(): Promise<void> {
   requireSupabase();
+  // SECURITY TODO (nonce): bind the idToken to this auth attempt to prevent
+  // replay. Generate a random nonce, pass SHA256(nonce) as signInAsync({ nonce })
+  // and the raw nonce as supabase.auth.signInWithIdToken({ ..., nonce }). Requires
+  // adding expo-crypto (digestStringAsync) + a native rebuild — deferred.
   // Lazy import for the same reason as Google: never touch the native module at
   // launch, and keep it out of Jest (which has no native side).
   const AppleAuthentication = await import('expo-apple-authentication');

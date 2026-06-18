@@ -12,7 +12,7 @@ import { LoginScreen } from './screens/LoginScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { AuthProvider, useAuth } from './session/AuthContext';
-import { authenticate, isBiometricAvailable } from './session/biometrics';
+import { authenticate, hasDeviceSecurity } from './session/biometrics';
 import { SessionProvider, useSession } from './session/SessionContext';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 import { font, radius, spacing, useResolvedMode, useTheme, weight } from './theme';
@@ -111,9 +111,12 @@ function BiometricGate({ children }: { children: ReactNode }) {
     }
     prompting.current = true;
     try {
-      // No enrolled biometrics → don't trap the user out; fail open.
-      const available = await isBiometricAvailable();
-      if (!available) {
+      // Only fail open when the device has NO unlock secret at all (no biometric
+      // AND no passcode) — otherwise we'd trap the user out. If a passcode exists,
+      // authenticate() falls back to it, so unenrolling biometrics can't silently
+      // disable the lock.
+      const secured = await hasDeviceSecurity();
+      if (!secured) {
         setUnlocked(true);
         return;
       }
@@ -138,7 +141,10 @@ function BiometricGate({ children }: { children: ReactNode }) {
     if (!lock) return;
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') tryUnlock();
-      else setUnlocked(false);
+      // Only re-lock on a real background transition. 'inactive' fires for
+      // transient interruptions (notification/control center, app switcher,
+      // incoming call) and must NOT trigger a re-lock / Face ID prompt storm.
+      else if (state === 'background') setUnlocked(false);
     });
     return () => sub.remove();
   }, [lock, tryUnlock]);

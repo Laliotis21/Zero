@@ -129,11 +129,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const patchForm = useCallback(
     (patch: Partial<HomeForm>) => {
-      setForm((prev) => {
-        const next = { ...prev, ...patch };
-        latest.current = { ...latest.current, form: next };
-        return next;
-      });
+      // Compute next synchronously and update the ref BEFORE persist(): the
+      // setForm updater runs in React's commit phase (after this fn returns),
+      // so reading latest.current inside it would persist the pre-patch form.
+      const next = { ...latest.current.form, ...patch };
+      latest.current = { ...latest.current, form: next };
+      setForm(next);
       persist();
     },
     [persist],

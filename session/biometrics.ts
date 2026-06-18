@@ -19,6 +19,21 @@ export async function isBiometricAvailable(): Promise<boolean> {
   }
 }
 
+/**
+ * Device has SOME unlock secret set (enrolled biometric OR a device passcode).
+ * Used by the app-lock gate: when true we can challenge via authenticate()
+ * (which falls back to the passcode), so we never fail open on a secured device
+ * just because biometrics were later unenrolled.
+ */
+export async function hasDeviceSecurity(): Promise<boolean> {
+  try {
+    const level = await LocalAuthentication.getEnrolledLevelAsync();
+    return level !== LocalAuthentication.SecurityLevel.NONE;
+  } catch {
+    return false;
+  }
+}
+
 /** Prompt for biometric (with device-passcode fallback). Returns success. */
 export async function authenticate(promptMessage: string): Promise<boolean> {
   try {

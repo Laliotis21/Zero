@@ -79,6 +79,9 @@ const ChunkedSecureStore = {
     const countRaw = await secureGet(`${key}.n`);
     if (countRaw == null) return null;
     const count = parseInt(countRaw, 10);
+    // Corrupt count key → treat as signed out (null), not '' which would make
+    // supabase-js run JSON.parse('') and throw on session restore.
+    if (!Number.isInteger(count) || count <= 0) return null;
     let out = '';
     for (let i = 0; i < count; i += 1) {
       const part = await secureGet(`${key}.${i}`);
@@ -101,7 +104,8 @@ const ChunkedSecureStore = {
     const countRaw = await secureGet(`${key}.n`);
     if (countRaw == null) return;
     const count = parseInt(countRaw, 10);
-    for (let i = 0; i < count; i += 1) {
+    const safe = Number.isInteger(count) && count > 0 ? count : 0;
+    for (let i = 0; i < safe; i += 1) {
       await secureDelete(`${key}.${i}`);
     }
     await secureDelete(`${key}.n`);
