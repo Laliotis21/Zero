@@ -83,14 +83,18 @@ export function buildBudgetHtml(data: BudgetPdfData): string {
   </body></html>`;
 }
 
-/** Print the HTML to a PDF file and open the native share sheet. */
-export async function exportBudgetPdf(html: string, dialogTitle: string): Promise<void> {
+/**
+ * Print the HTML to a PDF file and open the native share sheet.
+ * Returns false when the platform has no share capability (PDF still created,
+ * but the caller should tell the user nothing opened).
+ */
+export async function exportBudgetPdf(html: string, dialogTitle: string): Promise<boolean> {
   const { uri } = await Print.printToFileAsync({ html });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, {
-      mimeType: 'application/pdf',
-      dialogTitle,
-      UTI: 'com.adobe.pdf',
-    });
-  }
+  if (!(await Sharing.isAvailableAsync())) return false;
+  await Sharing.shareAsync(uri, {
+    mimeType: 'application/pdf',
+    dialogTitle,
+    UTI: 'com.adobe.pdf',
+  });
+  return true;
 }

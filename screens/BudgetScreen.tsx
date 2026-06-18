@@ -98,13 +98,16 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
             amount: money.format(it.amount),
           })),
         })),
-        footer: tr('budget.export.footer', { date: new Date().toLocaleDateString() }),
+        footer: tr('budget.export.footer', {
+          date: new Date().toLocaleDateString(settings.language === 'el' ? 'el-GR' : 'en-US'),
+        }),
       });
-      await exportBudgetPdf(html, tr('budget.title'));
+      const shared = await exportBudgetPdf(html, tr('budget.title'));
+      if (!shared) Alert.alert(tr('budget.export.error.title'), tr('budget.export.error.body'));
     } catch {
       Alert.alert(tr('budget.export.error.title'), tr('budget.export.error.body'));
     }
-  }, [tr, settings.taxYear, money, net, buckets]);
+  }, [tr, settings.taxYear, settings.language, money, net, buckets]);
 
   // Split the template around {amount} so the amount can be styled bold inline.
   const [introBefore = '', introAfter = ''] = tr('budget.intro').split('{amount}');
