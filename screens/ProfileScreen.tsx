@@ -18,6 +18,7 @@ import {
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { IconName } from '../types';
 import { CURRENCY_SYMBOL } from '../utils/format';
+import { openLink, requestAppReview, PRIVACY_URL, TERMS_URL } from '../utils/links';
 import { useMoney } from '../utils/money';
 
 interface ProfileScreenProps {
@@ -89,8 +90,8 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
       { text: tr('profile.signOut'), style: 'destructive', onPress: signOut },
     ]);
   }, [tr, signOut]);
-  // Sign-in, Pro purchase and legal/rate links have no backend/links yet —
-  // give honest feedback instead of a dead tap.
+  // Sign-in and Pro purchase have no backend yet — give honest feedback
+  // instead of a dead tap.
   const comingSoon = useCallback(
     () => Alert.alert(tr('common.soon.title'), tr('common.soon.body')),
     [tr],
@@ -159,11 +160,19 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
 
   const support: readonly RowSpec[] = useMemo(
     () => [
-      { icon: 'document-text-outline', label: tr('profile.row.terms'), onPress: comingSoon },
-      { icon: 'shield-checkmark-outline', label: tr('profile.row.privacy'), onPress: comingSoon },
-      { icon: 'star-outline', label: tr('profile.row.rate'), onPress: comingSoon },
+      {
+        icon: 'document-text-outline',
+        label: tr('profile.row.terms'),
+        onPress: () => openLink(TERMS_URL),
+      },
+      {
+        icon: 'shield-checkmark-outline',
+        label: tr('profile.row.privacy'),
+        onPress: () => openLink(PRIVACY_URL),
+      },
+      { icon: 'star-outline', label: tr('profile.row.rate'), onPress: requestAppReview },
     ],
-    [tr, comingSoon],
+    [tr],
   );
 
   // Sheet option lists.
