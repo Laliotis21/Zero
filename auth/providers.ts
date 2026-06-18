@@ -1,32 +1,46 @@
 /**
- * Pluggable auth provider seam.
+ * Pluggable auth provider seam — all three providers authenticate through
+ * Supabase Auth so a single backend owns sessions, refresh and user records.
  *
- * Google + Apple are wired to real native flows (@react-native-google-signin,
- * expo-apple-authentication). Email is still a mock identity so its UI flow
- * stays testable with no backend. To finish it, replace the body — keep the
- * `AuthUser` return shape and nothing else in the app has to change:
+ *   • Email  → supabase.auth.signUp / signInWithPassword.
+ *   • Google → native Google sign-in yields an idToken → signInWithIdToken.
+ *   • Apple  → native Apple sign-in yields an identityToken → signInWithIdToken.
  *
- *   • Email → your own `POST /auth/login` · `POST /auth/register`.
+ * Each may throw; callers surface the error to the user. Two thrown sentinels
+ * carry extra meaning rather than being treated as generic failures:
+ *   • Error('cancelled')     — user dismissed the provider sheet (silent reset).
+ *   • Error('confirm-email') — sign-up succeeded but needs email confirmation.
  *
- * Each may throw; callers surface the error to the user. A thrown
- * `Error('cancelled')` means the user dismissed the provider sheet.
+ * For Google/Apple to work the matching provider must be enabled in the
+ * Supabase dashboard (Auth → Providers) with its OAuth client id/secret, and
+ * Google still needs the native client ids in auth/googleConfig.ts.
  */
-
+import type { User } from '@supabase/supabase-js';
 import { GOOGLE_CONFIGURED, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from './googleConfig';
+import { supabase } from './supabaseClient';
 
 export type AuthProvider = 'google' | 'apple' | 'email';
 
 export interface AuthUser {
-  /** Stable unique id (provider-namespaced). */
+  /** Stable unique id (the Supabase user id). */
   id: string;
   name: string;
   email: string;
   provider: AuthProvider;
 }
 
-/** Simulated network latency so the UI exercises its real loading state. */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** Map a Supabase user record onto our slim app-facing shape. */
+export function toAuthUser(user: User, provider: AuthProvider): AuthUser {
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const metaName = typeof meta.full_name === 'string' ? meta.full_name : undefined;
+  const altName = typeof meta.name === 'string' ? meta.name : undefined;
+  const email = user.email ?? '';
+  return {
+    id: user.id,
+    name: metaName || altName || email.split('@')[0] || email || user.id,
+    email,
+    provider,
+  };
 }
 
 /**
@@ -57,13 +71,15 @@ export async function signInWithGoogle(): Promise<AuthUser> {
     await GoogleSignin.hasPlayServices(); // no-op on iOS; checks Play Services on Android.
     const response = await GoogleSignin.signIn();
     if (!isSuccessResponse(response)) throw new Error('cancelled');
-    const { user } = response.data;
-    return {
-      id: `google:${user.id}`,
-      name: user.name ?? user.email,
-      email: user.email,
+    const idToken = response.data.idToken;
+    if (!idToken) throw new Error('Google sign-in returned no idToken.');
+    // Exchange the Google idToken for a Supabase session.
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
-    };
+      token: idToken,
+    });
+    if (error) throw error;
+    return toAuthUser(data.user, 'google');
   } catch (err) {
     if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
       throw new Error('cancelled');
@@ -88,18 +104,20 @@ export async function signInWithApple(): Promise<AuthUser> {
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
       ],
     });
-    // Apple returns name/email only on the *first* authorization; a real backend
-    // must persist them then. On re-auth they're null, so we fall back here.
+    if (!credential.identityToken) throw new Error('Apple sign-in returned no identityToken.');
+    // Exchange the Apple identityToken for a Supabase session.
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+    });
+    if (error) throw error;
+    // Apple returns the name only on the *first* authorization; prefer it when
+    // present since Supabase won't have it on re-auth.
     const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
       .filter(Boolean)
       .join(' ');
-    const email = credential.email ?? `${credential.user}@privaterelay.appleid.com`;
-    return {
-      id: `apple:${credential.user}`,
-      name: fullName || email,
-      email,
-      provider: 'apple',
-    };
+    const mapped = toAuthUser(data.user, 'apple');
+    return fullName ? { ...mapped, name: fullName } : mapped;
   } catch (err) {
     // User dismissed the Apple sheet.
     if (err instanceof Error && (err as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
@@ -110,16 +128,23 @@ export async function signInWithApple(): Promise<AuthUser> {
 }
 
 /**
- * Email/password sign-in or registration. `register` only changes which API
- * endpoint a real implementation would call; the mock treats both alike.
+ * Email/password sign-in or registration against Supabase Auth. With email
+ * confirmation enabled, a successful sign-up returns no session — the user must
+ * click the link we email them — so we throw `confirm-email` for the UI to
+ * surface a "check your inbox" message instead of treating it as a failure.
  */
 export async function signInWithEmail(
   email: string,
-  _password: string,
-  _register: boolean,
+  password: string,
+  register: boolean,
 ): Promise<AuthUser> {
-  // TODO(auth): replace with POST /auth/login | /auth/register.
-  await delay(700);
-  const name = email.split('@')[0] || email;
-  return { id: `email:${email.toLowerCase()}`, name, email, provider: 'email' };
+  if (register) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    if (!data.session || !data.user) throw new Error('confirm-email');
+    return toAuthUser(data.user, 'email');
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return toAuthUser(data.user, 'email');
 }
