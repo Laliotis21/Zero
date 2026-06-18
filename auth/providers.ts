@@ -7,8 +7,13 @@
  * `onAuthStateChange` listener flips the user truthy — these functions only
  * trigger the flow and surface errors.
  *
- * Each may throw; callers surface the error to the user. A thrown
- * `Error('cancelled')` means the user dismissed the provider sheet.
+ * Two thrown sentinels carry extra meaning rather than being generic failures:
+ *   • Error('cancelled')     — user dismissed the provider sheet (silent reset).
+ *   • Error('confirm-email') — sign-up succeeded but needs email confirmation.
+ *
+ * For Google/Apple to work the matching provider must be enabled in the
+ * Supabase dashboard (Auth → Providers) with its OAuth client id/secret, and
+ * Google still needs the native client ids in auth/googleConfig.ts.
  */
 
 import { supabase, SUPABASE_CONFIGURED } from '../session/supabase';
@@ -105,8 +110,10 @@ export async function signInWithApple(): Promise<void> {
 
 /**
  * Email/password sign-in or registration via Supabase. `register` switches
- * `signUp` vs `signInWithPassword`. (If email confirmation is enabled in the
- * Supabase dashboard, a fresh sign-up has no session until the link is clicked.)
+ * `signUp` vs `signInWithPassword`. With email confirmation enabled in the
+ * Supabase dashboard, a fresh sign-up returns no session until the link is
+ * clicked, so we throw `confirm-email` for the UI to surface a "check your
+ * inbox" message instead of treating it as a failure.
  */
 export async function signInWithEmail(
   email: string,
@@ -114,8 +121,12 @@ export async function signInWithEmail(
   register: boolean,
 ): Promise<void> {
   requireSupabase();
-  const { error } = register
-    ? await supabase.auth.signUp({ email, password })
-    : await supabase.auth.signInWithPassword({ email, password });
+  if (register) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    if (!data.session) throw new Error('confirm-email');
+    return;
+  }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }

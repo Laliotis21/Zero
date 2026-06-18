@@ -123,6 +123,8 @@ const el = {
   'login.error.email': 'Δώσε έγκυρο email.',
   'login.error.password': 'Ο κωδικός θέλει 6+ χαρακτήρες.',
   'login.error.failed': 'Η σύνδεση απέτυχε. Δοκίμασε ξανά.',
+  'login.confirmEmail':
+    'Σου στείλαμε email επιβεβαίωσης. Άνοιξέ το για να ενεργοποιήσεις τον λογαριασμό σου.',
   'login.legal': 'Συνεχίζοντας αποδέχεσαι τους Όρους χρήσης και την Πολιτική Απορρήτου.',
 
   // Biometric app-lock
@@ -293,6 +295,7 @@ const en: Translations = {
   'login.error.email': 'Enter a valid email.',
   'login.error.password': 'Password needs 6+ characters.',
   'login.error.failed': 'Sign-in failed. Try again.',
+  'login.confirmEmail': 'We sent you a confirmation email. Open it to activate your account.',
   'login.legal': 'By continuing you accept the Terms of Use and Privacy Policy.',
 
   // Biometric app-lock

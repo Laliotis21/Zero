@@ -46,6 +46,8 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
+  // Non-error info (e.g. "check your inbox" after a sign-up needing confirmation).
+  const [notice, setNotice] = useState<string | null>(null);
 
   const busy = pending !== null;
   // Lets the email field's "next" key jump straight to the password field.
@@ -56,6 +58,7 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
     async (kind: Exclude<Pending, null>, fn: () => Promise<void>) => {
       if (busy) return;
       setError(null);
+      setNotice(null);
       setPending(kind);
       try {
         await fn();
@@ -65,9 +68,12 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
         setPending(null);
         onDone();
       } catch (err) {
+        const message = err instanceof Error ? err.message : '';
+        // Sign-up succeeded but needs email confirmation — surface as info, not
+        // an error, and don't navigate away.
+        if (message === 'confirm-email') setNotice(tr('login.confirmEmail'));
         // User dismissed the provider sheet — not an error, just reset.
-        const cancelled = err instanceof Error && err.message === 'cancelled';
-        if (!cancelled) setError(tr('login.error.failed'));
+        else if (message !== 'cancelled') setError(tr('login.error.failed'));
         setPending(null);
       }
     },
@@ -128,6 +134,7 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
                   onPress={() => {
                     setRegister(isReg);
                     setError(null);
+                    setNotice(null);
                   }}
                   style={[styles.togglePill, active && styles.togglePillActive]}
                   accessibilityRole="button"
@@ -201,6 +208,12 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
           {error ? (
             <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
               {error}
+            </Text>
+          ) : null}
+
+          {notice ? (
+            <Text style={styles.notice} accessibilityRole="alert" accessibilityLiveRegion="polite">
+              {notice}
             </Text>
           ) : null}
 
@@ -320,6 +333,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
     },
     error: { color: c.negative, fontSize: font.small, marginLeft: spacing.xs },
+    notice: { color: c.primary, fontSize: font.small, marginLeft: spacing.xs },
     submit: { alignSelf: 'stretch', marginTop: spacing.xs },
 
     divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: spacing.sm },
