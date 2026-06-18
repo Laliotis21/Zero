@@ -28,7 +28,7 @@
       "usesAppleSignIn": true
     },
     "android": {
-      "package": "com.zero.app",
+      "package": "app.zerofinance.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B0C10"
