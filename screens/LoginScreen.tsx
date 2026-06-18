@@ -27,14 +27,14 @@ interface LoginScreenProps {
   /** Called after a successful sign-in, or when the user dismisses (modal mode). */
   onDone: () => void;
   /**
-   * When provided, the screen acts as a launch gate: shows a "skip" affordance
-   * (continue as guest) instead of a close button. Omit for modal/back mode.
+   * Gate mode: the mandatory launch gate. Hides the close control (no way to
+   * dismiss without authenticating; no guest path). Omit for the Profile modal.
    */
-  onSkip?: () => void;
+  gate?: boolean;
 }
 
-/** Full-screen sign-in / sign-up — launch gate (with onSkip) or Profile modal. */
-export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
+/** Full-screen sign-in / sign-up — mandatory launch gate or Profile modal. */
+export function LoginScreen({ onDone, gate }: LoginScreenProps) {
   const c = useTheme();
   const tr = useT();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -95,8 +95,8 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.topBar}>
-        {/* Modal mode: X (back). Gate mode: no left control. */}
-        {onSkip ? (
+        {/* Modal mode: X (back). Gate mode: no dismiss control (login required). */}
+        {gate ? (
           <View style={{ width: 26 }} />
         ) : (
           <Pressable
@@ -109,19 +109,7 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
           </Pressable>
         )}
         <Text style={styles.logo}>ZERØ</Text>
-        {/* Gate mode: skip → continue as guest. */}
-        {onSkip ? (
-          <Pressable
-            onPress={onSkip}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel={tr('login.skip')}
-          >
-            <Text style={styles.skip}>{tr('login.skip')}</Text>
-          </Pressable>
-        ) : (
-          <View style={{ width: 26 }} />
-        )}
+        <View style={{ width: 26 }} />
       </View>
 
       <KeyboardAvoidingView
@@ -266,19 +254,6 @@ export function LoginScreen({ onDone, onSkip }: LoginScreenProps) {
           </View>
 
           <Text style={styles.legal}>{tr('login.legal')}</Text>
-
-          {/* Gate mode: explicit guest escape hatch under the fold. */}
-          {onSkip ? (
-            <Pressable
-              onPress={onSkip}
-              hitSlop={8}
-              style={styles.guest}
-              accessibilityRole="button"
-              accessibilityLabel={tr('login.guest')}
-            >
-              <Text style={styles.guestText}>{tr('login.guest')}</Text>
-            </Pressable>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -298,9 +273,6 @@ const makeStyles = (c: Palette) =>
       minHeight: 44,
     },
     logo: { color: c.text, fontSize: font.title, fontWeight: weight.black, letterSpacing: 1 },
-    skip: { color: c.textMuted, fontSize: font.body, fontWeight: weight.semibold },
-    guest: { alignSelf: 'center', paddingVertical: spacing.md, marginTop: spacing.xs },
-    guestText: { color: c.primary, fontSize: font.body, fontWeight: weight.semibold },
     content: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,

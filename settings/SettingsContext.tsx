@@ -20,6 +20,8 @@ export interface Settings {
   language: Language;
   taxYear: TaxYear;
   currency: Currency;
+  /** When true, require a biometric / passcode unlock to open the app. */
+  biometricLock: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   language: 'el',
   taxYear: 2026,
   currency: 'EUR',
+  biometricLock: false,
 };
 
 const STORAGE_KEY = 'zero.settings.v1';
@@ -55,6 +58,7 @@ function sanitize(raw: unknown): Partial<Settings> {
   if (LANGUAGES.includes(r.language as Language)) out.language = r.language as Language;
   if (TAX_YEARS.includes(r.taxYear as TaxYear)) out.taxYear = r.taxYear as TaxYear;
   if (CURRENCIES.includes(r.currency as Currency)) out.currency = r.currency as Currency;
+  if (typeof r.biometricLock === 'boolean') out.biometricLock = r.biometricLock;
   return out;
 }
 

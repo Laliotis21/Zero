@@ -120,14 +120,23 @@ const el = {
   'login.google': 'Συνέχισε με Google',
   'login.apple': 'Συνέχισε με Apple',
   'login.close': 'Κλείσιμο',
-  'login.skip': 'Παράλειψη',
-  'login.guest': 'Συνέχισε ως επισκέπτης',
   'login.error.email': 'Δώσε έγκυρο email.',
   'login.error.password': 'Ο κωδικός θέλει 6+ χαρακτήρες.',
   'login.error.failed': 'Η σύνδεση απέτυχε. Δοκίμασε ξανά.',
   'login.confirmEmail':
     'Σου στείλαμε email επιβεβαίωσης. Άνοιξέ το για να ενεργοποιήσεις τον λογαριασμό σου.',
   'login.legal': 'Συνεχίζοντας αποδέχεσαι τους Όρους χρήσης και την Πολιτική Απορρήτου.',
+
+  // Biometric app-lock
+  'biometric.title': 'Κλειδωμένο',
+  'biometric.body': 'Επαλήθευσε την ταυτότητά σου για να συνεχίσεις.',
+  'biometric.unlock': 'Ξεκλείδωμα',
+  'biometric.prompt': 'Ξεκλείδωσε το ZERØ',
+  'biometric.unavailable.title': 'Μη διαθέσιμο',
+  'biometric.unavailable.body': 'Δεν υπάρχει ρυθμισμένο Face ID / Touch ID σε αυτή τη συσκευή.',
+  'settings.biometric': 'Βιομετρικό κλείδωμα',
+  'common.on': 'Ενεργό',
+  'common.off': 'Ανενεργό',
 
   // Appearance options
   'appearance.system': 'Αυτόματο',
@@ -283,13 +292,22 @@ const en: Translations = {
   'login.google': 'Continue with Google',
   'login.apple': 'Continue with Apple',
   'login.close': 'Close',
-  'login.skip': 'Skip',
-  'login.guest': 'Continue as guest',
   'login.error.email': 'Enter a valid email.',
   'login.error.password': 'Password needs 6+ characters.',
   'login.error.failed': 'Sign-in failed. Try again.',
   'login.confirmEmail': 'We sent you a confirmation email. Open it to activate your account.',
   'login.legal': 'By continuing you accept the Terms of Use and Privacy Policy.',
+
+  // Biometric app-lock
+  'biometric.title': 'Locked',
+  'biometric.body': 'Verify your identity to continue.',
+  'biometric.unlock': 'Unlock',
+  'biometric.prompt': 'Unlock ZERØ',
+  'biometric.unavailable.title': 'Unavailable',
+  'biometric.unavailable.body': 'No Face ID / Touch ID is set up on this device.',
+  'settings.biometric': 'Biometric lock',
+  'common.on': 'On',
+  'common.off': 'Off',
 
   'appearance.system': 'Automatic',
   'appearance.light': 'Light',

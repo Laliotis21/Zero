@@ -1,4 +1,4 @@
-import type { Session } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 import React, {
   createContext,
   ReactNode,
@@ -15,33 +15,30 @@ import {
   signInWithEmail,
   signInWithGoogle,
 } from '../auth/providers';
-import { supabase } from '../auth/supabaseClient';
+import { supabase, SUPABASE_CONFIGURED } from './supabase';
 
 const PROVIDERS: readonly Provider[] = ['google', 'apple', 'email'];
 
-/** Derive our slim app user from a Supabase session (single source of truth). */
-function fromSession(session: Session | null): AuthUser | null {
-  const user = session?.user;
+/** Map a Supabase user onto the app's AuthUser shape. */
+function mapUser(user: User | null | undefined): AuthUser | null {
   if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  const email = user.email ?? '';
   const rawProvider = user.app_metadata?.provider;
   const provider = PROVIDERS.includes(rawProvider as Provider)
     ? (rawProvider as Provider)
     : 'email';
-  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-  const metaName = typeof meta.full_name === 'string' ? meta.full_name : undefined;
-  const altName = typeof meta.name === 'string' ? meta.name : undefined;
-  const email = user.email ?? '';
-  return {
-    id: user.id,
-    name: metaName || altName || email.split('@')[0] || email || user.id,
-    email,
-    provider,
-  };
+  const name =
+    (typeof meta.full_name === 'string' && meta.full_name) ||
+    (typeof meta.name === 'string' && meta.name) ||
+    email ||
+    'User';
+  return { id: user.id, name, email, provider };
 }
 
 interface AuthValue {
   user: AuthUser | null;
-  /** True until the persisted session has been read from disk. */
+  /** True until the persisted session has been read from secure storage. */
   hydrating: boolean;
   signInGoogle: () => Promise<void>;
   signInApple: () => Promise<void>;
@@ -56,22 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hydrating, setHydrating] = useState(true);
 
-  // Hydrate from any persisted Supabase session, then keep in sync with every
-  // auth change (sign-in, token refresh, sign-out — including from other tabs).
+  // Restore the persisted session and subscribe to all later auth changes.
+  // The listener is the single source of truth — sign-in/out anywhere flows
+  // back through here, so the sign-in helpers below don't set state directly.
   useEffect(() => {
+    if (!SUPABASE_CONFIGURED) {
+      setHydrating(false);
+      return;
+    }
     let alive = true;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (!alive) return;
-        setUser(fromSession(data.session));
-      })
-      .finally(() => {
-        if (alive) setHydrating(false);
-      });
-
+    supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      setUser(mapUser(data.session?.user));
+      setHydrating(false);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(fromSession(session));
+      setUser(mapUser(session?.user));
     });
     return () => {
       alive = false;
@@ -79,20 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // The provider calls establish a Supabase session; onAuthStateChange above is
-  // what actually flips `user`, so we just await the side effect here.
-  const signInGoogle = useCallback(async () => {
-    await signInWithGoogle();
-  }, []);
-
-  const signInApple = useCallback(async () => {
-    await signInWithApple();
-  }, []);
-
-  const signInEmail = useCallback(async (email: string, password: string, register: boolean) => {
-    await signInWithEmail(email, password, register);
-  }, []);
-
+  const signInGoogle = useCallback(() => signInWithGoogle(), []);
+  const signInApple = useCallback(() => signInWithApple(), []);
+  const signInEmail = useCallback(
+    (email: string, password: string, register: boolean) =>
+      signInWithEmail(email, password, register),
+    [],
+  );
   const signOut = useCallback(() => {
     supabase.auth.signOut().catch(() => undefined);
   }, []);
