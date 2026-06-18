@@ -124,7 +124,47 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
           <Text style={styles.title}>{tr('login.title')}</Text>
           <Text style={styles.subtitle}>{tr('login.subtitle')}</Text>
 
-          {/* Σύνδεση / Εγγραφή toggle */}
+          {/* Social — primary path: one tap, auto-registers on first use. */}
+          <View style={styles.social}>
+            <SocialButton
+              brand="google"
+              label={tr('login.google')}
+              onPress={() => run('google', signInGoogle)}
+              loading={pending === 'google'}
+              disabled={busy && pending !== 'google'}
+            />
+            {/* Apple sign-in is only offered on Apple platforms (HIG). */}
+            {Platform.OS === 'ios' ? (
+              <SocialButton
+                brand="apple"
+                label={tr('login.apple')}
+                onPress={() => run('apple', signInApple)}
+                loading={pending === 'apple'}
+                disabled={busy && pending !== 'apple'}
+              />
+            ) : null}
+          </View>
+
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
+              {error}
+            </Text>
+          ) : null}
+
+          {notice ? (
+            <Text style={styles.notice} accessibilityRole="alert" accessibilityLiveRegion="polite">
+              {notice}
+            </Text>
+          ) : null}
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.line} />
+            <Text style={styles.or}>{tr('login.or')}</Text>
+            <View style={styles.line} />
+          </View>
+
+          {/* Email fallback. Σύνδεση / Εγγραφή toggle scopes only this block. */}
           <View style={styles.toggle}>
             {([false, true] as const).map((isReg) => {
               const active = register === isReg;
@@ -205,18 +245,6 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
             </View>
           </View>
 
-          {error ? (
-            <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
-              {error}
-            </Text>
-          ) : null}
-
-          {notice ? (
-            <Text style={styles.notice} accessibilityRole="alert" accessibilityLiveRegion="polite">
-              {notice}
-            </Text>
-          ) : null}
-
           <GlowButton
             label={tr(register ? 'login.submit.signUp' : 'login.submit.signIn')}
             onPress={submitEmail}
@@ -224,34 +252,6 @@ export function LoginScreen({ onDone, gate }: LoginScreenProps) {
             disabled={busy && pending !== 'email'}
             style={styles.submit}
           />
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.or}>{tr('login.or')}</Text>
-            <View style={styles.line} />
-          </View>
-
-          {/* Social */}
-          <View style={styles.social}>
-            <SocialButton
-              brand="google"
-              label={tr('login.google')}
-              onPress={() => run('google', signInGoogle)}
-              loading={pending === 'google'}
-              disabled={busy && pending !== 'google'}
-            />
-            {/* Apple sign-in is only offered on Apple platforms (HIG). */}
-            {Platform.OS === 'ios' ? (
-              <SocialButton
-                brand="apple"
-                label={tr('login.apple')}
-                onPress={() => run('apple', signInApple)}
-                loading={pending === 'apple'}
-                disabled={busy && pending !== 'apple'}
-              />
-            ) : null}
-          </View>
 
           <Text style={styles.legal}>{tr('login.legal')}</Text>
         </ScrollView>

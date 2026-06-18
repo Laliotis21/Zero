@@ -26,14 +26,62 @@ export const SUPABASE_CONFIGURED =
  */
 const CHUNK = 2000;
 
+/**
+ * Keychain access needs the `keychain-access-groups` entitlement, which an
+ * unsigned local simulator build (no Apple Team) lacks — SecureStore then throws
+ * "A required entitlement isn't present." Rather than break auth on such builds,
+ * we fall back to an in-memory store for the session. On real devices and EAS
+ * builds the entitlement is present, so this never triggers and tokens stay in
+ * the Keychain. Trade-off when it does trigger: tokens live only in memory and
+ * are lost on app restart (acceptable for a dev simulator).
+ */
+const memStore = new Map<string, string>();
+let useMemStore = false;
+
+async function secureGet(key: string): Promise<string | null> {
+  if (useMemStore) return memStore.get(key) ?? null;
+  try {
+    return await SecureStore.getItemAsync(key);
+  } catch {
+    useMemStore = true;
+    console.warn('SecureStore unavailable (missing entitlement) — using in-memory session store.');
+    return memStore.get(key) ?? null;
+  }
+}
+
+async function secureSet(key: string, value: string): Promise<void> {
+  if (!useMemStore) {
+    try {
+      await SecureStore.setItemAsync(key, value);
+      return;
+    } catch {
+      useMemStore = true;
+      console.warn('SecureStore unavailable (missing entitlement) — using in-memory session store.');
+    }
+  }
+  memStore.set(key, value);
+}
+
+async function secureDelete(key: string): Promise<void> {
+  if (!useMemStore) {
+    try {
+      await SecureStore.deleteItemAsync(key);
+      return;
+    } catch {
+      useMemStore = true;
+    }
+  }
+  memStore.delete(key);
+}
+
 const ChunkedSecureStore = {
   async getItem(key: string): Promise<string | null> {
-    const countRaw = await SecureStore.getItemAsync(`${key}.n`);
+    const countRaw = await secureGet(`${key}.n`);
     if (countRaw == null) return null;
     const count = parseInt(countRaw, 10);
     let out = '';
     for (let i = 0; i < count; i += 1) {
-      const part = await SecureStore.getItemAsync(`${key}.${i}`);
+      const part = await secureGet(`${key}.${i}`);
       if (part == null) return null; // corrupt/partial — treat as signed out
       out += part;
     }
@@ -44,19 +92,19 @@ const ChunkedSecureStore = {
     await ChunkedSecureStore.removeItem(key); // clear any stale chunks first
     const count = Math.max(1, Math.ceil(value.length / CHUNK));
     for (let i = 0; i < count; i += 1) {
-      await SecureStore.setItemAsync(`${key}.${i}`, value.slice(i * CHUNK, (i + 1) * CHUNK));
+      await secureSet(`${key}.${i}`, value.slice(i * CHUNK, (i + 1) * CHUNK));
     }
-    await SecureStore.setItemAsync(`${key}.n`, String(count));
+    await secureSet(`${key}.n`, String(count));
   },
 
   async removeItem(key: string): Promise<void> {
-    const countRaw = await SecureStore.getItemAsync(`${key}.n`);
+    const countRaw = await secureGet(`${key}.n`);
     if (countRaw == null) return;
     const count = parseInt(countRaw, 10);
     for (let i = 0; i < count; i += 1) {
-      await SecureStore.deleteItemAsync(`${key}.${i}`);
+      await secureDelete(`${key}.${i}`);
     }
-    await SecureStore.deleteItemAsync(`${key}.n`);
+    await secureDelete(`${key}.n`);
   },
 };
 
@@ -76,6 +124,9 @@ export const supabase: SupabaseClient = createClient(
       persistSession: true,
       // No URL-based session detection in a native app (that's web OAuth redirects).
       detectSessionInUrl: false,
+      // PKCE: signInWithOAuth returns an auth code we exchange in-app
+      // (exchangeCodeForSession). The code verifier is kept in the secure store.
+      flowType: 'pkce',
     },
   },
 );

@@ -1,8 +1,7 @@
 /**
- * Auth provider seam. Google + Apple use native sign-in
- * (@react-native-google-signin, expo-apple-authentication) to obtain an
- * identity token, which is then handed to Supabase (`signInWithIdToken`) for
- * server-side verification and session issuance. Email uses Supabase
+ * Auth provider seam. Google uses Supabase OAuth (PKCE) via the system auth
+ * session; Apple uses native sign-in (expo-apple-authentication) to obtain an
+ * identity token handed to Supabase (`signInWithIdToken`). Email uses Supabase
  * password auth. On success, Supabase persists the session and AuthContext's
  * `onAuthStateChange` listener flips the user truthy — these functions only
  * trigger the flow and surface errors.
@@ -12,12 +11,11 @@
  *   • Error('confirm-email') — sign-up succeeded but needs email confirmation.
  *
  * For Google/Apple to work the matching provider must be enabled in the
- * Supabase dashboard (Auth → Providers) with its OAuth client id/secret, and
- * Google still needs the native client ids in auth/googleConfig.ts.
+ * Supabase dashboard (Auth → Providers) with its OAuth client id/secret.
  */
 
+import * as WebBrowser from 'expo-web-browser';
 import { supabase, SUPABASE_CONFIGURED } from '../session/supabase';
-import { GOOGLE_CONFIGURED, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from './googleConfig';
 
 export type AuthProvider = 'google' | 'apple' | 'email';
 
@@ -35,47 +33,47 @@ function requireSupabase(): void {
   }
 }
 
-/**
- * Lazily load the native Google module on first sign-in and configure it once.
- * Deferred via dynamic import so the native module is never touched at app
- * launch — a binary not yet rebuilt with it still boots (only a Google tap
- * fails, gracefully). Also avoids loading it in Jest, which has no native side.
- */
-let googleConfigured = false;
-async function loadGoogle() {
-  const google = await import('@react-native-google-signin/google-signin');
-  if (!googleConfigured) {
-    if (!GOOGLE_CONFIGURED) {
-      throw new Error('Google OAuth client IDs not set — edit auth/googleConfig.ts.');
-    }
-    google.GoogleSignin.configure({
-      // webClientId sets the idToken audience Supabase verifies against; it must
-      // match the Google provider config in the Supabase dashboard.
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-      iosClientId: GOOGLE_IOS_CLIENT_ID,
-    });
-    googleConfigured = true;
-  }
-  return google;
-}
+// Deep-link the OAuth redirect back into the app. Must be allow-listed in the
+// Supabase dashboard (Auth → URL Configuration → Redirect URLs) and matches the
+// `scheme` in app.json.
+const GOOGLE_REDIRECT = 'zero://auth-callback';
 
+/**
+ * Google sign-in via Supabase OAuth (PKCE) through the system auth session
+ * (ASWebAuthenticationSession on iOS / Custom Tabs on Android). We can't use the
+ * native idToken flow with Supabase: GoogleSignIn's iOS SDK (AppAuth) stamps a
+ * random nonce into the idToken that it never exposes, so gotrue's nonce check
+ * can never match. The OAuth code flow sidesteps it entirely and is uniform
+ * across platforms. Supabase opens Google, redirects back to GOOGLE_REDIRECT
+ * with an auth `code`, which we exchange for a session.
+ */
 export async function signInWithGoogle(): Promise<void> {
   requireSupabase();
-  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await loadGoogle();
-  try {
-    await GoogleSignin.hasPlayServices(); // no-op on iOS; checks Play Services on Android.
-    const response = await GoogleSignin.signIn();
-    if (!isSuccessResponse(response)) throw new Error('cancelled');
-    const idToken = response.data.idToken;
-    if (!idToken) throw new Error('Google did not return an idToken.');
-    const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
-    if (error) throw error;
-  } catch (err) {
-    if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
-      throw new Error('cancelled');
-    }
-    throw err;
-  }
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: GOOGLE_REDIRECT,
+      // We drive the browser ourselves so we can capture the redirect URL.
+      skipBrowserRedirect: true,
+      // Always show the account chooser instead of silently reusing a session.
+      queryParams: { prompt: 'select_account' },
+    },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('Google sign-in could not start.');
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, GOOGLE_REDIRECT);
+  // User closed the sheet — treat as a silent cancel, like the other providers.
+  if (result.type !== 'success') throw new Error('cancelled');
+
+  const url = new URL(result.url);
+  const errDesc = url.searchParams.get('error_description');
+  if (errDesc) throw new Error(errDesc);
+  const code = url.searchParams.get('code');
+  if (!code) throw new Error('Google did not return an auth code.');
+
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  if (exchangeError) throw exchangeError;
 }
 
 export async function signInWithApple(): Promise<void> {

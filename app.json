@@ -2,6 +2,7 @@
   "expo": {
     "name": "ZERØ",
     "slug": "zero",
+    "scheme": "zero",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -47,10 +48,16 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID_REVERSED"
+          "iosUrlScheme": "com.googleusercontent.apps.902230726949-94urbv5hreg7qsofmu31bqdbslnnrenq"
         }
       ],
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "21bde19d-5f71-4652-b958-9480f1535a40"
+      }
+    }
   }
 }
