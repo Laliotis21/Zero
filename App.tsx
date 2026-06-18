@@ -151,9 +151,24 @@ function BiometricGate({ children }: { children: ReactNode }) {
 function Gate() {
   const c = useTheme();
   const { hydrating } = useSettings();
-  const { hydrating: sessionHydrating } = useSession();
+  const { hydrating: sessionHydrating, patchForm } = useSession();
   const { hydrating: authHydrating, user } = useAuth();
   const { onboarded, complete } = useOnboarding();
+
+  // Every login starts on Μισθωτός (employee) regardless of the persisted pick.
+  // Fires once per login once both auth and session have hydrated (order-agnostic);
+  // re-armed on sign-out so the next login resets again.
+  const modeReset = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      modeReset.current = false;
+      return;
+    }
+    if (!sessionHydrating && !modeReset.current) {
+      modeReset.current = true;
+      patchForm({ mode: 'employee' });
+    }
+  }, [user, sessionHydrating, patchForm]);
 
   if (hydrating || sessionHydrating || authHydrating || onboarded === null) {
     return (

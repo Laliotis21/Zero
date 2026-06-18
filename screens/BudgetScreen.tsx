@@ -10,6 +10,7 @@ import { useSettings } from '../settings/SettingsContext';
 import { font, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { BudgetBucket } from '../types';
 import { buildBudget } from '../utils/budget';
+import { buildBudgetHtml, exportBudgetPdf } from '../utils/budgetPdf';
 import { useMoney } from '../utils/money';
 
 interface BudgetScreenProps {
@@ -79,10 +80,31 @@ function BudgetScreenBase({ net }: BudgetScreenProps) {
     Alert.alert(tr('budget.saved.title'), tr('budget.saved.body'));
   }, [net, settings.taxYear, buckets, tr]);
 
-  // PDF export needs a native print module not bundled yet — be honest, not silent.
-  const onExport = useCallback(() => {
-    Alert.alert(tr('common.soon.title'), tr('common.soon.body'));
-  }, [tr]);
+  // Render the current split to a PDF and hand it to the native share sheet.
+  const onExport = useCallback(async () => {
+    try {
+      const html = buildBudgetHtml({
+        title: tr('budget.title'),
+        subtitle: tr('budget.tag', { year: settings.taxYear }),
+        netLabel: tr('budget.export.net'),
+        net: money.format(net),
+        buckets: buckets.map((b) => ({
+          title: tr(b.titleKey),
+          pct: b.pct,
+          accent: b.accent,
+          amount: money.format(b.amount),
+          items: b.items.map((it) => ({
+            label: tr(it.labelKey),
+            amount: money.format(it.amount),
+          })),
+        })),
+        footer: tr('budget.export.footer', { date: new Date().toLocaleDateString() }),
+      });
+      await exportBudgetPdf(html, tr('budget.title'));
+    } catch {
+      Alert.alert(tr('budget.export.error.title'), tr('budget.export.error.body'));
+    }
+  }, [tr, settings.taxYear, money, net, buckets]);
 
   // Split the template around {amount} so the amount can be styled bold inline.
   const [introBefore = '', introAfter = ''] = tr('budget.intro').split('{amount}');
