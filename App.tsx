@@ -11,6 +11,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
+import { ProProvider } from './purchases/ProContext';
 import { AuthProvider, useAuth } from './session/AuthContext';
 import { authenticate, hasDeviceSecurity } from './session/biometrics';
 import { SessionProvider, useSession } from './session/SessionContext';
@@ -206,9 +207,11 @@ export default function App() {
       <SettingsProvider>
         <SessionProvider>
           <AuthProvider>
-            <ErrorBoundary>
-              <Gate />
-            </ErrorBoundary>
+            <ProProvider>
+              <ErrorBoundary>
+                <Gate />
+              </ErrorBoundary>
+            </ProProvider>
           </AuthProvider>
         </SessionProvider>
       </SettingsProvider>
