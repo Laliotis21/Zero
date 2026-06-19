@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import Purchases, {
   CustomerInfo,
   PurchasesOffering,
@@ -9,16 +10,27 @@ import { captureException } from '../utils/crash';
  * RevenueCat in-app-purchase wrapper.
  *
  * Mirrors the env-guard pattern in `utils/crash.ts`: RevenueCat is configured
- * only when an iOS public API key is provided via `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
+ * only when the public API key for the current platform is provided —
+ * `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (App Store, `appl_…`) on iOS,
+ * `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (Play Store, `goog_…`) on Android.
  * Without it, every function here is a safe no-op and `isPro` resolves to false —
  * so local/dev runs (and any build before the owner pastes their key) keep the
  * free experience working instead of crashing on an unconfigured SDK.
  *
- * IAP also requires a native build (`expo run:ios` / EAS) and a sandbox tester;
- * it does NOT work in Expo Go. See REVENUECAT_SETUP.md.
+ * IAP also requires a native build (`expo run:ios` / `expo run:android` / EAS)
+ * and a store sandbox/test account; it does NOT work in Expo Go.
+ * See REVENUECAT_SETUP.md.
  */
 
 const IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
+const ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
+
+/** Public API key for the current platform (iOS App Store vs Play Store). */
+const API_KEY = Platform.select({
+  ios: IOS_API_KEY,
+  android: ANDROID_API_KEY,
+  default: undefined,
+});
 
 /**
  * TODO(owner): keep these in sync with what you configure in the RevenueCat
@@ -28,24 +40,27 @@ const IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
  *   `customerInfo.entitlements.active[ENTITLEMENT_ID]` to decide `isPro`.
  * - OFFERING_ID: leave undefined to use RevenueCat's "current" (default)
  *   offering, or set it to a specific offering identifier.
- * - MONTHLY_PRODUCT_ID: the App Store Connect product id for the €2.99 Pro
- *   subscription. Only used as a fallback to locate the package inside the
- *   offering when the standard monthly slot isn't populated.
+ * - MONTHLY_PRODUCT_ID: the store product id for the €2.99 Pro subscription.
+ *   Only used as a fallback to locate the package inside the offering when the
+ *   standard monthly slot isn't populated. Note: RevenueCat maps a single
+ *   entitlement across both stores, but the underlying App Store / Play Store
+ *   product ids can differ — the offering's "Monthly" package is the reliable
+ *   path; this id is just a last-resort match.
  */
 export const ENTITLEMENT_ID = 'pro';
 export const OFFERING_ID: string | undefined = undefined; // TODO(owner): set if not using the current offering
-export const MONTHLY_PRODUCT_ID = 'zero_pro_monthly'; // TODO(owner): match your App Store Connect product id
+export const MONTHLY_PRODUCT_ID = 'zero_pro_monthly'; // TODO(owner): match your store product id
 
-/** True only when an API key is present; gates every SDK call below. */
-export const purchasesEnabled = Boolean(IOS_API_KEY);
+/** True only when the current platform's API key is present; gates every SDK call below. */
+export const purchasesEnabled = Boolean(API_KEY);
 
 let configured = false;
 
 /** Configure the RevenueCat SDK once. No-op when no API key is set. */
 export function initPurchases(): void {
-  if (configured || !IOS_API_KEY) return;
+  if (configured || !API_KEY) return;
   try {
-    Purchases.configure({ apiKey: IOS_API_KEY });
+    Purchases.configure({ apiKey: API_KEY });
     configured = true;
   } catch (e) {
     captureException(e, { where: 'initPurchases' });

@@ -7,6 +7,13 @@ shows a friendly "not available" message). The free experience works unchanged.
 Follow these steps **in order** to start charging real money for Pro (€2.99/mo).
 Nothing here requires touching the code — only dashboards and one env var.
 
+> **Android-first launch.** Ship to Google Play first → do the **Android** section
+> below. The iOS sections apply later when you add the App Store. The code picks
+> the right key automatically per platform (`Platform.select` in
+> `purchases/Purchases.ts`): `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (`goog_…`) on
+> Android, `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (`appl_…`) on iOS. A single `pro`
+> entitlement spans both stores.
+
 ---
 
 ## 1. Create a RevenueCat account (free)
@@ -76,10 +83,65 @@ means a dev/prebuild build:
    and the paywall is replaced with the "Pro unlocked" state. Use **Restore
    purchases** on Profile to verify restore works (required by App Review).
 
+---
+
+## Android (Google Play) — primary launch
+
+Same shape as iOS, different dashboards. Do this for the Play Store release.
+
+### A1. Add a Google Play app in RevenueCat
+1. RevenueCat → your Project → **+ New app** → platform **Google Play Store**.
+2. Package name: `app.zerofinance.mobile` (matches `app.json` `android.package`).
+3. RevenueCat needs a **Google Play service account credential** (JSON) for
+   receipt validation: Google Play Console → **Setup → API access** → create/link
+   a service account, grant it **Financial data / Manage orders** permission,
+   download the JSON, upload it to RevenueCat. (Can be done after A2.)
+
+### A2. Create the IAP product in Google Play Console
+1. Play Console → your app → **Monetize → Products**.
+   - **Subscriptions** for a monthly Pro (recommended): create a subscription,
+     add a **base plan** (auto-renewing, monthly) priced at **€2.99**.
+   - or **In-app products** (one-time) for a single €2.99 unlock.
+2. Set the product / base plan id. The code fallback constant is
+   `MONTHLY_PRODUCT_ID = 'zero_pro_monthly'` (`purchases/Purchases.ts`) — match it
+   or change the constant. (The offering's Monthly package is the reliable path;
+   the id is only a fallback, so iOS and Android ids may differ.)
+3. Activate the product. Note: Play requires the app's **first build uploaded**
+   (internal testing track is enough) before products go active.
+
+### A3. Wire into RevenueCat (shared with iOS)
+1. RevenueCat → **Products** → import the Play product id from A2.
+2. **Entitlements** → attach it to the **same `pro` entitlement** used by iOS.
+3. **Offerings** → add it to the **Monthly** package slot of the current offering
+   (alongside the iOS product), so `findMonthlyPackage()` resolves on Android too.
+
+### A4. Copy the Android public API key
+1. RevenueCat → **Project settings → API keys** → copy the **Google Play Store**
+   *public* key (starts with `goog_`).
+2. In `.env` (gitignored):
+   ```
+   EXPO_PUBLIC_REVENUECAT_ANDROID_KEY=goog_xxxxxxxxxxxxxxxxxxxx
+   ```
+
+### A5. Build + test on Android
+IAP does **not** work in Expo Go — needs a native build.
+1. Build: `npx expo run:android` (local) or `eas build --profile development --platform android`.
+2. Upload an AAB to an **internal testing** track in Play Console and add your
+   Google account as a **license tester** (Play Console → Setup → License
+   testing) so test purchases aren't charged.
+3. Install the testing build, open **Profile → Get Pro** (or the **Results**
+   paywall), complete a purchase, confirm `isPro` flips true and **Restore
+   purchases** works.
+
+---
+
 ## Notes
 
 - The entitlement id (`pro`), offering, and product id placeholders all live in
   `purchases/Purchases.ts` — keep them in sync with the dashboard.
+- One `pro` entitlement covers both stores; the app reads the platform's key via
+  `Platform.select`, so you can ship Android now and add the iOS key later with no
+  code change.
 - No config plugin is required: `react-native-purchases` autolinks on prebuild.
 - Before submitting to the App Store, make sure the IAP product is attached to
   the app version under review, and that a **Restore Purchases** action is
