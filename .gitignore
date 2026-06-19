@@ -41,3 +41,9 @@ yarn-error.*
 .vscode/
 .claude/settings.local.json
 .claude/worktrees/
+
+# fastlane — never commit the Play service-account key or generated reports
+**/play-store-key.json
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/metadata/

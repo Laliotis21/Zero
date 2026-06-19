@@ -47,7 +47,7 @@ const API_KEY = Platform.select({
  *   product ids can differ — the offering's "Monthly" package is the reliable
  *   path; this id is just a last-resort match.
  */
-export const ENTITLEMENT_ID = 'pro';
+export const ENTITLEMENT_ID = 'Zero Pro';
 export const OFFERING_ID: string | undefined = undefined; // TODO(owner): set if not using the current offering
 export const MONTHLY_PRODUCT_ID = 'zero_pro_monthly'; // TODO(owner): match your store product id
 
