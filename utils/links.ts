@@ -2,9 +2,9 @@ import { Linking } from 'react-native';
 import * as StoreReview from 'expo-store-review';
 import * as WebBrowser from 'expo-web-browser';
 
-/** Canonical legal pages, served from the app's marketing domain. */
-export const TERMS_URL = 'https://zerofinance.app/terms';
-export const PRIVACY_URL = 'https://zerofinance.app/privacy';
+/** Canonical legal pages, hosted on GitHub Pages from the repo's /docs folder. */
+export const TERMS_URL = 'https://laliotis21.github.io/Zero/terms.html';
+export const PRIVACY_URL = 'https://laliotis21.github.io/Zero/privacy.html';
 
 /** Open a web link in an in-app browser, falling back to the system browser. */
 export async function openLink(url: string): Promise<void> {
