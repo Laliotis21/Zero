@@ -76,7 +76,7 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
   const tr = useT();
   const money = useMoney();
   const { settings, update } = useSettings();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const { isPro, loading: proLoading, purchase, restore } = usePro();
   const styles = useMemo(() => makeStyles(t), [t]);
 
@@ -92,6 +92,30 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
       { text: tr('profile.signOut'), style: 'destructive', onPress: signOut },
     ]);
   }, [tr, signOut]);
+
+  // Permanent account deletion (store data-deletion requirement). Confirm first;
+  // on failure surface an error rather than silently leaving the account intact.
+  const confirmDeleteAccount = useCallback(() => {
+    Alert.alert(
+      tr('profile.deleteAccount.confirmTitle'),
+      tr('profile.deleteAccount.confirmBody'),
+      [
+        { text: tr('common.cancel'), style: 'cancel' },
+        {
+          text: tr('profile.deleteAccount'),
+          style: 'destructive',
+          onPress: () => {
+            deleteAccount().catch(() =>
+              Alert.alert(
+                tr('profile.deleteAccount.errorTitle'),
+                tr('profile.deleteAccount.errorBody'),
+              ),
+            );
+          },
+        },
+      ],
+    );
+  }, [tr, deleteAccount]);
   // Run the RevenueCat purchase flow. Falls back to a friendly "not available"
   // message when no API key is configured (purchasesEnabled === false), and
   // surfaces cancel/error gracefully like the rest of the app.
@@ -252,13 +276,23 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
         </Card>
 
         {user ? (
-          <GlowButton
-            label={tr('profile.signOut')}
-            icon="log-out-outline"
-            variant="outline"
-            color={t.textMuted}
-            onPress={confirmSignOut}
-          />
+          <>
+            <GlowButton
+              label={tr('profile.signOut')}
+              icon="log-out-outline"
+              variant="outline"
+              color={t.textMuted}
+              onPress={confirmSignOut}
+            />
+            <Pressable
+              onPress={confirmDeleteAccount}
+              accessibilityRole="button"
+              accessibilityLabel={tr('profile.deleteAccount')}
+              style={styles.deleteBtn}
+            >
+              <Text style={styles.deleteText}>{tr('profile.deleteAccount')}</Text>
+            </Pressable>
+          </>
         ) : (
           <GlowButton
             label={tr('profile.signIn')}
@@ -419,6 +453,8 @@ const makeStyles = (c: Palette) =>
     premiumCta: { alignSelf: 'stretch', marginTop: spacing.xs },
     restoreBtn: { alignSelf: 'center', paddingVertical: spacing.sm },
     restoreText: { color: c.textMuted, fontSize: font.small, fontWeight: weight.semibold },
+    deleteBtn: { alignSelf: 'center', paddingVertical: spacing.sm },
+    deleteText: { color: c.negative, fontSize: font.small, fontWeight: weight.semibold },
     proActiveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
     proActiveText: { color: c.positive, fontSize: font.body, fontWeight: weight.bold },
 

@@ -111,6 +111,13 @@ const el = {
   'profile.version': 'ZERØ v1.0.0',
   'profile.signOut': 'Αποσύνδεση',
   'profile.signedInSub': 'Συνδεδεμένος',
+  'profile.deleteAccount': 'Διαγραφή λογαριασμού',
+  'profile.deleteAccount.confirmTitle': 'Διαγραφή λογαριασμού;',
+  'profile.deleteAccount.confirmBody':
+    'Αυτό διαγράφει οριστικά τον λογαριασμό σου και τα δεδομένα του. Δεν αναιρείται.',
+  'profile.deleteAccount.errorTitle': 'Αποτυχία διαγραφής',
+  'profile.deleteAccount.errorBody':
+    'Κάτι πήγε στραβά. Δοκίμασε ξανά ή επικοινώνησε μαζί μας.',
 
   // Login
   'login.title': 'Καλώς ήρθες',
@@ -303,6 +310,13 @@ const en: Translations = {
   'profile.version': 'ZERØ v1.0.0',
   'profile.signOut': 'Sign out',
   'profile.signedInSub': 'Signed in',
+  'profile.deleteAccount': 'Delete account',
+  'profile.deleteAccount.confirmTitle': 'Delete account?',
+  'profile.deleteAccount.confirmBody':
+    'This permanently deletes your account and its data. This cannot be undone.',
+  'profile.deleteAccount.errorTitle': 'Deletion failed',
+  'profile.deleteAccount.errorBody':
+    'Something went wrong. Please try again or contact us.',
 
   'login.title': 'Welcome',
   'login.subtitle': 'Sign in to save your calculations across devices.',

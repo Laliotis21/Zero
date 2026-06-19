@@ -5,7 +5,7 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    // Node-only build tooling (not part of the RN bundle).
-    ignores: ["dist/*", "scripts/*", "node_modules/*"],
+    // Node-only build tooling + Deno edge functions (not part of the RN bundle).
+    ignores: ["dist/*", "scripts/*", "node_modules/*", "supabase/functions/*"],
   }
 ]);

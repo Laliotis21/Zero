@@ -45,6 +45,13 @@ interface AuthValue {
   /** `register` toggles sign-up vs sign-in. */
   signInEmail: (email: string, password: string, register: boolean) => Promise<void>;
   signOut: () => void;
+  /**
+   * Permanently delete the signed-in user (Play/App Store data-deletion
+   * requirement). Calls the `delete-account` edge function — which uses the
+   * service role to remove the auth user — then drops the local session.
+   * Throws on failure so the caller can surface an error.
+   */
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -87,9 +94,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.signOut().catch(() => undefined);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) throw error;
+    // User row is gone server-side; clear the now-orphaned local session.
+    await supabase.auth.signOut().catch(() => undefined);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, hydrating, signInGoogle, signInApple, signInEmail, signOut }),
-    [user, hydrating, signInGoogle, signInApple, signInEmail, signOut],
+    () => ({
+      user,
+      hydrating,
+      signInGoogle,
+      signInApple,
+      signInEmail,
+      signOut,
+      deleteAccount,
+    }),
+    [user, hydrating, signInGoogle, signInApple, signInEmail, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
