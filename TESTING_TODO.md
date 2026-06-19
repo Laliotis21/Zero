@@ -16,15 +16,19 @@ Audit 2026-06-16. Updated 2026-06-18. Health: jest 19/19 pass, `tsc --noEmit` cl
 - [x] `sanitizeForm` clamps hydrated ints via `clampInt`: years 0–9, activeYears 0–40, efkaClass 1–6 (mirrors steppers + class table). Corrupt blob no longer yields empty fee card. `session/SessionContext.tsx`
 - [x] `budget.tag` no longer claims "inflation-adjusted" (false) — now "{year} · 50/30/20", matching `buildBudget`. `i18n/strings.ts`
 
+## Launch strategy (decided 2026-06-19)
+- **Android-first.** Ship to Google Play first. iOS (App Store) only later, if it goes well.
+- Implication: iOS-specific blockers below are **deferred**, not dropped. Android has its own equivalents (Play Data Safety form, Google Play Billing).
+
 ## Production readiness — go-live blockers
 P0 (block App Store submission):
 - [x] iOS bundleId aligned to `app.zerofinance.mobile` (was `com.zero.app`; commit 653cdb1). `app.json`, `auth/GOOGLE_SETUP.md`, `auth/googleConfig.ts`
 - [ ] Apple Developer App ID `app.zerofinance.mobile` registered (+ Apple Sign-In capability).
 - [ ] Google iOS OAuth client re-created for new bundle; update `iosUrlScheme` (`app.json`) + Supabase Authorized Client IDs. Sign-in breaks until done.
-- [ ] Host legal pages `https://zerofinance.app/terms` + `/privacy` (links wired, pages missing).
-- [ ] Pro paywall still stub — "Get Pro" → `comingSoon` Alert (`ProfileScreen.tsx:260`), Results "Upgrade" + AI Reverse Pricing no purchase flow. Decide: implement IAP (RevenueCat/StoreKit) **or** hide paywall for v1.
-- [~] `EXPO_PUBLIC_SENTRY_DSN` documented in `.env.example`; `utils/crash.ts` already wired. **Action left: paste real DSN into `.env`** (Sentry → Project → Client Keys (DSN)) — until then prod has no crash reporting.
-- [ ] App Store Connect privacy/data-collection disclosure (email auth collects PII).
+- [x] Legal pages hosted free on GitHub Pages (`docs/{terms,privacy,index}.html`). Links updated → `https://laliotis21.github.io/Zero/terms.html` + `/privacy.html` (`utils/links.ts`). **Action left: repo Settings → Pages → Source: main `/docs`** to publish. Legal text is generic template — get lawyer-reviewed.
+- [~] Pro paywall — RevenueCat scaffolded (`purchases/Purchases.ts`, `purchases/ProContext.tsx`, `usePro()`), CTAs wired (`ProfileScreen` buyPro/restore, `ResultsScreen` purchase), `react-native-purchases` added, dormant until key set. **iOS-only scaffold** (`EXPO_PUBLIC_REVENUECAT_IOS_KEY`, App Store IAP `zero_pro_monthly`/entitlement `pro`). **Android needs adding: Google Play Billing + RevenueCat Android key + Play Console product.** Setup steps in `REVENUECAT_SETUP.md`.
+- [x] `EXPO_PUBLIC_SENTRY_DSN` set in `.env` (valid format, gitignored); `utils/crash.ts` wired. Live crash reporting in prod builds. Real-crash test pending a build.
+- [ ] ~~App Store Connect privacy/data-collection disclosure~~ — **SKIP (iOS deferred, Android-first).** Replace with **Google Play Data Safety form** (Play Console) — same data: email/name/userID collected+linked (App Functionality), salary on-device (not collected), crash+performance not-linked, no tracking SDKs. Source: `APP_STORE_PRIVACY.md`. Privacy Policy URL = `https://laliotis21.github.io/Zero/privacy.html`.
 - [ ] Supabase OAuth callback on default `*.supabase.co` → redirect_uri_mismatch risk; custom domain before prod (memory `google-oauth-prod-domain`).
 
 P1:
