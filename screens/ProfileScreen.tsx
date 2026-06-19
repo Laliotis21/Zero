@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { OptionSheet, SheetOption } from '../components/ui/OptionSheet';
 import { useT, type StringKey } from '../i18n/strings';
+import { usePro } from '../purchases/ProContext';
 import { useAuth } from '../session/AuthContext';
 import { isBiometricAvailable } from '../session/biometrics';
 import { LoginScreen } from './LoginScreen';
@@ -76,6 +77,7 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
   const money = useMoney();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
+  const { isPro, loading: proLoading, purchase, restore } = usePro();
   const styles = useMemo(() => makeStyles(t), [t]);
 
   const [sheet, setSheet] = useState<SheetKind | null>(null);
@@ -90,12 +92,34 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
       { text: tr('profile.signOut'), style: 'destructive', onPress: signOut },
     ]);
   }, [tr, signOut]);
-  // Sign-in and Pro purchase have no backend yet — give honest feedback
-  // instead of a dead tap.
-  const comingSoon = useCallback(
-    () => Alert.alert(tr('common.soon.title'), tr('common.soon.body')),
-    [tr],
-  );
+  // Run the RevenueCat purchase flow. Falls back to a friendly "not available"
+  // message when no API key is configured (purchasesEnabled === false), and
+  // surfaces cancel/error gracefully like the rest of the app.
+  const buyPro = useCallback(async () => {
+    const outcome = await purchase();
+    switch (outcome.status) {
+      case 'success':
+        Alert.alert(tr('pro.success.title'), tr('pro.success.body'));
+        break;
+      case 'cancelled':
+        break; // user backed out — stay silent
+      case 'unavailable':
+        Alert.alert(tr('pro.unavailable.title'), tr('pro.unavailable.body'));
+        break;
+      case 'error':
+        Alert.alert(tr('pro.error.title'), tr('pro.error.body'));
+        break;
+    }
+  }, [purchase, tr]);
+
+  // App Store policy requires a visible "Restore Purchases" affordance.
+  const restorePro = useCallback(async () => {
+    const ok = await restore();
+    Alert.alert(
+      ok ? tr('pro.restore.okTitle') : tr('pro.restore.noneTitle'),
+      ok ? tr('pro.restore.okBody') : tr('pro.restore.noneBody'),
+    );
+  }, [restore, tr]);
 
   // Toggle the app-lock. Turning it on requires enrolled biometrics; otherwise
   // we'd lock the user behind a prompt that can never succeed.
@@ -250,16 +274,37 @@ function ProfileScreenBase({ net }: ProfileScreenProps) {
               <Ionicons name="sparkles-outline" size={16} color={t.onAccent} />
               <Text style={styles.proBadgeText}>PRO</Text>
             </View>
-            <Text style={styles.price}>€2.99</Text>
+            {isPro ? null : <Text style={styles.price}>€2.99</Text>}
           </View>
           <Text style={styles.premiumTitle}>{tr('profile.proTitle')}</Text>
-          <Text style={styles.premiumBody}>{tr('profile.proBody')}</Text>
-          <GlowButton
-            label={tr('profile.proCta')}
-            icon="arrow-up-circle-outline"
-            onPress={comingSoon}
-            style={styles.premiumCta}
-          />
+          <Text style={styles.premiumBody}>
+            {isPro ? tr('profile.proActiveBody') : tr('profile.proBody')}
+          </Text>
+          {isPro ? (
+            <View style={styles.proActiveRow}>
+              <Ionicons name="checkmark-circle" size={20} color={t.positive} />
+              <Text style={styles.proActiveText}>{tr('profile.proActive')}</Text>
+            </View>
+          ) : (
+            <>
+              <GlowButton
+                label={tr('profile.proCta')}
+                icon="arrow-up-circle-outline"
+                onPress={buyPro}
+                loading={proLoading}
+                style={styles.premiumCta}
+              />
+              <Pressable
+                onPress={restorePro}
+                disabled={proLoading}
+                accessibilityRole="button"
+                accessibilityLabel={tr('profile.proRestore')}
+                style={styles.restoreBtn}
+              >
+                <Text style={styles.restoreText}>{tr('profile.proRestore')}</Text>
+              </Pressable>
+            </>
+          )}
         </Card>
 
         {/* Quick stat — last net */}
@@ -372,6 +417,10 @@ const makeStyles = (c: Palette) =>
     premiumTitle: { color: c.text, fontSize: font.title, fontWeight: weight.black },
     premiumBody: { color: c.textMuted, fontSize: font.small, lineHeight: 20 },
     premiumCta: { alignSelf: 'stretch', marginTop: spacing.xs },
+    restoreBtn: { alignSelf: 'center', paddingVertical: spacing.sm },
+    restoreText: { color: c.textMuted, fontSize: font.small, fontWeight: weight.semibold },
+    proActiveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+    proActiveText: { color: c.positive, fontSize: font.body, fontWeight: weight.bold },
 
     statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statValue: { color: c.positive, fontSize: font.subtitle, fontWeight: weight.black },

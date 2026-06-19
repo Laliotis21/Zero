@@ -6,6 +6,7 @@ import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useT, type StringKey } from '../i18n/strings';
+import { usePro } from '../purchases/ProContext';
 import { useSettings } from '../settings/SettingsContext';
 import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, IconName } from '../types';
@@ -47,13 +48,27 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
   const tr = useT();
   const money = useMoney();
   const { settings } = useSettings();
+  const { isPro, loading: proLoading, purchase } = usePro();
   const styles = useMemo(() => makeStyles(t), [t]);
-  // AI Reverse Pricing is a paid feature with no purchase flow yet — don't
-  // silently route to a free screen; tell the user it's coming.
-  const handleUpgrade = useCallback(
-    () => Alert.alert(tr('common.soon.title'), tr('common.soon.body')),
-    [tr],
-  );
+  // AI Reverse Pricing is gated behind Pro. Run the RevenueCat purchase flow;
+  // fall back to a friendly "not available" message when no key is configured,
+  // and surface cancel/error gracefully.
+  const handleUpgrade = useCallback(async () => {
+    const outcome = await purchase();
+    switch (outcome.status) {
+      case 'success':
+        Alert.alert(tr('pro.success.title'), tr('pro.success.body'));
+        break;
+      case 'cancelled':
+        break; // user backed out — stay silent
+      case 'unavailable':
+        Alert.alert(tr('pro.unavailable.title'), tr('pro.unavailable.body'));
+        break;
+      case 'error':
+        Alert.alert(tr('pro.error.title'), tr('pro.error.body'));
+        break;
+    }
+  }, [purchase, tr]);
 
   const view = useMemo(() => {
     if (!result || result.net <= 0) return null;
@@ -160,16 +175,32 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
         </View>
       </Card>
 
-      {/* Paywall */}
-      <Card style={[styles.paywall, glow(t.primary, 0.18, 22)]}>
-        <View style={styles.lockBadge}>
-          <Ionicons name="lock-closed-outline" size={24} color={t.primary} />
-        </View>
-        <Text style={styles.paywallTitle}>{tr('results.paywall.title')}</Text>
-        <Text style={styles.paywallBody}>{tr('results.paywall.body')}</Text>
-        <Text style={styles.price}>{tr('results.paywall.price')}</Text>
-        <GlowButton label={tr('results.paywall.cta')} icon="arrow-up-circle-outline" onPress={handleUpgrade} style={styles.upgradeBtn} />
-      </Card>
+      {/* Paywall — replaced by an unlocked state once the user owns Pro. */}
+      {isPro ? (
+        <Card style={[styles.paywall, glow(t.positive, 0.18, 22)]}>
+          <View style={styles.lockBadge}>
+            <Ionicons name="sparkles" size={24} color={t.positive} />
+          </View>
+          <Text style={styles.paywallTitle}>{tr('results.pro.title')}</Text>
+          <Text style={styles.paywallBody}>{tr('results.pro.body')}</Text>
+        </Card>
+      ) : (
+        <Card style={[styles.paywall, glow(t.primary, 0.18, 22)]}>
+          <View style={styles.lockBadge}>
+            <Ionicons name="lock-closed-outline" size={24} color={t.primary} />
+          </View>
+          <Text style={styles.paywallTitle}>{tr('results.paywall.title')}</Text>
+          <Text style={styles.paywallBody}>{tr('results.paywall.body')}</Text>
+          <Text style={styles.price}>{tr('results.paywall.price')}</Text>
+          <GlowButton
+            label={tr('results.paywall.cta')}
+            icon="arrow-up-circle-outline"
+            onPress={handleUpgrade}
+            loading={proLoading}
+            style={styles.upgradeBtn}
+          />
+        </Card>
+      )}
 
       <Text style={styles.source}>
         {tr('results.source', {
