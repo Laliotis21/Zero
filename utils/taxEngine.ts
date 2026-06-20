@@ -220,3 +220,30 @@ export function calcFreelancer(
     presumptive,
   };
 }
+
+/**
+ * Reverse pricing: the monthly gross/revenue required to take home a given
+ * target net per month. `netForGross` maps a candidate monthly gross to the
+ * resulting net (build it from `calcEmployee` or `calcFreelancer` for the
+ * current inputs). Net is monotonically increasing in gross for both modes,
+ * so a binary search converges. Returns null when the target is non-positive
+ * or unreachable.
+ */
+export function solveGrossForNet(
+  targetNetMonthly: number,
+  netForGross: (grossMonthly: number) => number,
+): number | null {
+  if (!(targetNetMonthly > 0)) return null;
+  let lo = 0;
+  let hi = Math.max(targetNetMonthly * 1.5, 100);
+  let guard = 0;
+  // Grow the upper bound until it overshoots the target (net < gross always).
+  while (netForGross(hi) < targetNetMonthly && guard++ < 80) hi *= 2;
+  if (netForGross(hi) < targetNetMonthly) return null;
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2;
+    if (netForGross(mid) < targetNetMonthly) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+}

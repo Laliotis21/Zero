@@ -3,6 +3,7 @@ import {
   calcFreelancer,
   efkaFreelancerClasses,
   paymentsPerYear,
+  solveGrossForNet,
   tableMeta,
   tablesFor,
 } from '../utils/taxEngine';
@@ -102,5 +103,28 @@ describe('calcFreelancer', () => {
     expect(r.presumptive).toBe(true);
     expect(r.tax).toBeCloseTo(126.0, 1); // (900 + 2782*0.22) / 12
     expect(r.net).toBeLessThan(0); // deductions exceed revenue
+  });
+});
+
+describe('taxEngine — reverse pricing (solveGrossForNet)', () => {
+  it('finds the freelancer revenue that yields a target net', () => {
+    const target = 2000;
+    const gross = solveGrossForNet(target, (g) => calcFreelancer(g, 1, 5, 2026).net);
+    expect(gross).not.toBeNull();
+    // round-trip: forward calc on the solved gross reproduces the target net
+    expect(calcFreelancer(gross!, 1, 5, 2026).net).toBeCloseTo(target, 1);
+    expect(gross!).toBeGreaterThan(target); // gross must exceed net
+  });
+
+  it('finds the employee gross that yields a target net', () => {
+    const target = 1500;
+    const gross = solveGrossForNet(target, (g) => calcEmployee(g, 0, 5, 2026).net);
+    expect(gross).not.toBeNull();
+    expect(calcEmployee(gross!, 0, 5, 2026).net).toBeCloseTo(target, 1);
+  });
+
+  it('returns null for a non-positive target', () => {
+    expect(solveGrossForNet(0, (g) => calcFreelancer(g, 1, 5, 2026).net)).toBeNull();
+    expect(solveGrossForNet(-100, (g) => calcEmployee(g, 0, 5, 2026).net)).toBeNull();
   });
 });

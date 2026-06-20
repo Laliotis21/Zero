@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { memo, useCallback, useMemo } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card } from '../components/ui/Card';
 import { GlowButton } from '../components/ui/GlowButton';
 import { IconLabel } from '../components/ui/IconLabel';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useT, type StringKey } from '../i18n/strings';
 import { usePro } from '../purchases/ProContext';
+import { useSession } from '../session/SessionContext';
 import { useSettings } from '../settings/SettingsContext';
 import { font, glow, Palette, radius, spacing, useTheme, weight } from '../theme';
 import { CalcResult, IconName } from '../types';
 import { useMoney } from '../utils/money';
-import { tableMeta } from '../utils/taxEngine';
+import { calcEmployee, calcFreelancer, solveGrossForNet, tableMeta } from '../utils/taxEngine';
 
 interface ResultsScreenProps {
   result: CalcResult | null;
@@ -48,9 +49,24 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
   const tr = useT();
   const money = useMoney();
   const { settings } = useSettings();
+  const { form } = useSession();
   const { isPro, loading: proLoading, purchase } = usePro();
   const styles = useMemo(() => makeStyles(t), [t]);
-  // AI Reverse Pricing is gated behind Pro. Run the RevenueCat purchase flow;
+
+  // Reverse Pricing (Pro): given a target net/month, solve the gross needed,
+  // using the same engine + the user's current mode/EFKA/years inputs.
+  const [targetInput, setTargetInput] = useState('');
+  const reverseGross = useMemo(() => {
+    const target = parseFloat(targetInput.replace(',', '.'));
+    if (!(target > 0)) return null;
+    const year = result?.year ?? settings.taxYear;
+    const netForGross = (g: number) =>
+      form.mode === 'freelancer'
+        ? calcFreelancer(g, form.efkaClass, form.activeYears, year).net
+        : calcEmployee(g, parseInt(form.children, 10) || 0, form.years, year).net;
+    return solveGrossForNet(target, netForGross);
+  }, [targetInput, form, result, settings.taxYear]);
+  // Reverse Pricing is gated behind Pro. Run the RevenueCat purchase flow;
   // fall back to a friendly "not available" message when no key is configured,
   // and surface cancel/error gracefully.
   const handleUpgrade = useCallback(async () => {
@@ -183,6 +199,23 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
           </View>
           <Text style={styles.paywallTitle}>{tr('results.pro.title')}</Text>
           <Text style={styles.paywallBody}>{tr('results.pro.body')}</Text>
+          <Text style={styles.reverseLabel}>{tr('results.reverse.label')}</Text>
+          <TextInput
+            style={styles.reverseInput}
+            value={targetInput}
+            onChangeText={setTargetInput}
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            placeholder={tr('results.reverse.placeholder')}
+            placeholderTextColor={t.textMuted}
+          />
+          {reverseGross != null ? (
+            <Text style={styles.reverseResult}>
+              {tr('results.reverse.result', { amount: money.format(reverseGross) })}
+            </Text>
+          ) : targetInput.length > 0 ? (
+            <Text style={styles.paywallDisclosure}>{tr('results.reverse.invalid')}</Text>
+          ) : null}
         </Card>
       ) : (
         <Card style={[styles.paywall, glow(t.primary, 0.18, 22)]}>
@@ -199,6 +232,9 @@ function ResultsScreenBase({ result }: ResultsScreenProps) {
             loading={proLoading}
             style={styles.upgradeBtn}
           />
+          <Text style={styles.paywallDisclosure}>
+            {tr('results.paywall.disclosure')}
+          </Text>
         </Card>
       )}
 
@@ -280,6 +316,23 @@ const makeStyles = (c: Palette) =>
     },
     paywallTitle: { color: c.text, fontSize: font.title, fontWeight: weight.black },
     paywallBody: { color: c.textMuted, fontSize: font.small, textAlign: 'center', lineHeight: 20 },
+    paywallDisclosure: { color: c.textMuted, fontSize: font.small, textAlign: 'center', marginTop: spacing.xs, opacity: 0.8 },
+    reverseLabel: { color: c.textMuted, fontSize: font.small, alignSelf: 'stretch', marginTop: spacing.sm },
+    reverseInput: {
+      alignSelf: 'stretch',
+      marginTop: spacing.xs,
+      backgroundColor: c.bgElevated,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.primary,
+      color: c.text,
+      fontSize: font.title,
+      fontWeight: weight.bold,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      textAlign: 'center',
+    },
+    reverseResult: { color: c.positive, fontSize: font.title, fontWeight: weight.black, textAlign: 'center', marginTop: spacing.sm },
     price: { color: c.primary, fontSize: font.body, fontWeight: weight.bold, marginTop: spacing.xs },
     upgradeBtn: { alignSelf: 'stretch', marginTop: spacing.sm },
     source: { color: c.textMuted, fontSize: font.micro, textAlign: 'center', marginTop: spacing.xs },
