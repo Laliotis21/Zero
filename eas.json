@@ -23,7 +23,7 @@
       "android": {
         "serviceAccountKeyPath": "./android/fastlane/play-store-key.json",
         "track": "internal",
-        "releaseStatus": "draft"
+        "releaseStatus": "completed"
       }
     }
   }
