@@ -59,6 +59,10 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const tr = useT();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { width } = Dimensions.get('window');
+  // Root pads the screen by spacing.xl on each side, so the pager frame — and each
+  // page — is narrower than the window. Using the window width here overflows the
+  // frame: text clips at the right edge and the neighbouring slide bleeds in.
+  const pageWidth = width - spacing.xl * 2;
   const scroller = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const [accepted, setAccepted] = useState(false);
@@ -67,10 +71,10 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const i = Math.round(e.nativeEvent.contentOffset.x / width);
+      const i = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
       if (i !== index) setIndex(i);
     },
-    [index, width],
+    [index, pageWidth],
   );
 
   const next = useCallback(() => {
@@ -79,16 +83,16 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       onDone();
       return;
     }
-    scroller.current?.scrollTo({ x: width * (index + 1), animated: true });
-  }, [last, index, width, onDone]);
+    scroller.current?.scrollTo({ x: pageWidth * (index + 1), animated: true });
+  }, [last, index, pageWidth, onDone]);
 
   // Skip jumps to the last slide — it must NOT bypass the disclaimer gate.
   const skipToEnd = useCallback(() => {
     Haptics.selectionAsync().catch(() => undefined);
     const target = SLIDES.length - 1;
     setIndex(target);
-    scroller.current?.scrollTo({ x: width * target, animated: true });
-  }, [width]);
+    scroller.current?.scrollTo({ x: pageWidth * target, animated: true });
+  }, [pageWidth]);
 
   const toggleAccept = useCallback(() => {
     Haptics.selectionAsync().catch(() => undefined);
@@ -120,7 +124,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         style={styles.flex}
       >
         {SLIDES.map((s) => (
-          <View key={s.titleKey} style={[styles.slide, { width }]}>
+          <View key={s.titleKey} style={[styles.slide, { width: pageWidth }]}>
             <View style={styles.iconWrap}>
               <Ionicons name={s.icon} size={56} color={c.primary} />
             </View>
